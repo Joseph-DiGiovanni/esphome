@@ -1485,6 +1485,7 @@ ESP32_BOARD_PINS = {
     "xinabox_cw02": {"LED": 27},
     "upesy_wroom": {"LED": 2},
     "upesy_wrover": {"LED": 2},
+    "litter_robot4": {"TX": 19, "RX": 5},
 }
 
 """
@@ -2686,6 +2687,10 @@ BOARDS = {
     "yb_esp32s3_eth": {
         "name": "YelloByte YB-ESP32-S3-ETH",
         "variant": VARIANT_ESP32S3,
+    },
+    "litter_robot4": {
+        "name": "Litter Robot 4",
+        "variant": VARIANT_ESP32,
     },
 }
 # DO NOT ADD ANYTHING BELOW THIS LINE
