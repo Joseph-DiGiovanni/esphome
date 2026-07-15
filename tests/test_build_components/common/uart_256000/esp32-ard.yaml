@@ -1,0 +1,12 @@
+# Common UART configuration for ESP32 Arduino tests - 256000 baud
+
+substitutions:
+  tx_pin: GPIO19
+  rx_pin: GPIO5
+
+uart:
+  - id: uart_bus
+    tx_pin: ${tx_pin}
+    rx_pin: ${rx_pin}
+    baud_rate: 256000
+    rx_buffer_size: 2048
