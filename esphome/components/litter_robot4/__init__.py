@@ -6,6 +6,16 @@ from esphome.const import CONF_ID
 CODEOWNERS = ["@Joseph-DiGiovanni"]
 DEPENDENCIES = ["uart"]
 
+FINAL_VALIDATE_SCHEMA = uart.final_validate_device_schema(
+    "litter_robot4",
+    baud_rate=256000,
+    require_tx=True,
+    require_rx=True,
+    data_bits=8,
+    parity="NONE",
+    stop_bits=1,
+)
+
 litter_robot4_ns = cg.esphome_ns.namespace("litter_robot4")
 LitterRobot4Component = litter_robot4_ns.class_(
     "LitterRobot4Component", uart.UARTDevice, cg.Component
