@@ -1,6 +1,10 @@
 #include "litter_robot4.h"
 #include "esphome/core/log.h"
 
+#ifdef USE_API
+#include "esphome/components/api/api_server.h"
+#endif
+
 namespace esphome::litter_robot4 {
 
 static const char *const TAG = "litter_robot4";
@@ -12,6 +16,14 @@ void LitterRobot4Component::loop() {
     this->parse_byte_(this->read());
   }
   this->check_timeouts_();
+#ifdef USE_API
+  // Poll registers and sync time when API connects so the frontend immediately gets fresh state after a reconnect.
+  bool connected = api::global_api_server->is_connected();
+  if (connected && !this->api_was_connected_) {
+    this->poll_registers();
+  }
+  this->api_was_connected_ = connected;
+#endif
 }
 
 void LitterRobot4Component::dump_config() {
@@ -23,7 +35,12 @@ void LitterRobot4Component::dump_config() {
 
 void LitterRobot4Component::read_register(uint8_t reg) {
   if (this->read_count_ >= MAX_PENDING) {
-    ESP_LOGW(TAG, "Read queue full, dropping read for register 0x%02X", reg);
+    auto *name = register_name(reg);
+    if (name) {
+      ESP_LOGW(TAG, "Read queue full, dropping read for %s (0x%02X)", name, reg);
+    } else {
+      ESP_LOGW(TAG, "Read queue full, dropping read for register 0x%02X", reg);
+    }
     return;
   }
 
@@ -40,7 +57,12 @@ void LitterRobot4Component::read_register(uint8_t reg) {
 
 void LitterRobot4Component::write_register(uint8_t reg, uint16_t value) {
   if (this->write_count_ >= MAX_PENDING) {
-    ESP_LOGW(TAG, "Write queue full, dropping write for register 0x%02X", reg);
+    auto *name = register_name(reg);
+    if (name) {
+      ESP_LOGW(TAG, "Write queue full, dropping write for %s (0x%02X)", name, reg);
+    } else {
+      ESP_LOGW(TAG, "Write queue full, dropping write for register 0x%02X", reg);
+    }
     return;
   }
 
@@ -57,6 +79,20 @@ void LitterRobot4Component::write_register(uint8_t reg, uint16_t value) {
 }
 
 void LitterRobot4Component::send_frame_(uint8_t operation, uint8_t reg, uint16_t value) {
+  auto *name = register_name(reg);
+  if (operation == OP_READ) {
+    if (name) {
+      ESP_LOGD(TAG, "ESP read: %s (0x%02X)", name, reg);
+    } else {
+      ESP_LOGD(TAG, "ESP read: reg=0x%02X", reg);
+    }
+  } else if (operation == OP_WRITE) {
+    if (name) {
+      ESP_LOGD(TAG, "ESP write: %s = %u (0x%04X)", name, value, value);
+    } else {
+      ESP_LOGD(TAG, "ESP write: reg=0x%02X value=%u (0x%04X)", reg, value, value);
+    }
+  }
   uint8_t value_high = static_cast<uint8_t>(value >> 8);
   uint8_t value_low = static_cast<uint8_t>(value & 0xFF);
   uint8_t checksum = (DIR_ESP_TO_PIC + operation + reg + value_high + value_low) & 0xFF;
@@ -118,21 +154,41 @@ void LitterRobot4Component::handle_frame_(uint8_t direction, uint8_t operation, 
 }
 
 void LitterRobot4Component::handle_event_(uint8_t reg, uint16_t value) {
-  ESP_LOGD(TAG, "PIC write: reg=0x%02X value=%u (0x%04X)", reg, value, value);
+  auto *name = register_name(reg);
+  if (name) {
+    ESP_LOGD(TAG, "PIC write: %s = %u (0x%04X)", name, value, value);
+  } else {
+    ESP_LOGD(TAG, "PIC write: reg=0x%02X value=%u (0x%04X)", reg, value, value);
+  }
   this->send_frame_(OP_WRITE_ACK, reg, value);
   this->on_register_update_callback_.call(reg, value);
 }
 
 void LitterRobot4Component::handle_read_reply_(uint8_t reg, uint16_t value) {
   if (this->read_count_ == 0) {
-    ESP_LOGD(TAG, "Unexpected read reply for register 0x%02X", reg);
+    auto *name = register_name(reg);
+    if (name) {
+      ESP_LOGD(TAG, "Unexpected read reply for %s (0x%02X)", name, reg);
+    } else {
+      ESP_LOGD(TAG, "Unexpected read reply for register 0x%02X", reg);
+    }
     return;
   }
 
   auto &pending = this->read_queue_[this->read_head_];
   if (pending.reg != reg) {
-    ESP_LOGW(TAG, "Read reply mismatch: expected 0x%02X got 0x%02X", pending.reg, reg);
+    auto *exp = register_name(pending.reg);
+    auto *got = register_name(reg);
+    ESP_LOGW(TAG, "Read reply mismatch: expected %s (0x%02X) got %s (0x%02X)", exp ? exp : "?", pending.reg,
+             got ? got : "?", reg);
     return;
+  }
+
+  auto *n = register_name(reg);
+  if (n) {
+    ESP_LOGD(TAG, "PIC read reply: %s = %u (0x%04X)", n, value, value);
+  } else {
+    ESP_LOGD(TAG, "PIC read reply: reg=0x%02X value=%u (0x%04X)", reg, value, value);
   }
 
   this->on_register_update_callback_.call(reg, value);
@@ -141,18 +197,30 @@ void LitterRobot4Component::handle_read_reply_(uint8_t reg, uint16_t value) {
 
 void LitterRobot4Component::handle_write_ack_(uint8_t reg, uint16_t value) {
   if (this->write_count_ == 0) {
-    ESP_LOGD(TAG, "Unexpected write ack for register 0x%02X", reg);
+    auto *name = register_name(reg);
+    if (name) {
+      ESP_LOGD(TAG, "Unexpected write ack for %s (0x%02X)", name, reg);
+    } else {
+      ESP_LOGD(TAG, "Unexpected write ack for register 0x%02X", reg);
+    }
     return;
   }
 
   auto &pending = this->write_queue_[this->write_head_];
   if (pending.reg != reg || pending.value != value) {
-    ESP_LOGW(TAG, "Write ack mismatch: expected 0x%02X=0x%04X got 0x%02X=0x%04X", pending.reg, pending.value, reg,
-             value);
+    auto *exp = register_name(pending.reg);
+    auto *got = register_name(reg);
+    ESP_LOGW(TAG, "Write ack mismatch: expected %s (0x%02X)=0x%04X got %s (0x%02X)=0x%04X", exp ? exp : "?",
+             pending.reg, pending.value, got ? got : "?", reg, value);
     return;
   }
 
-  ESP_LOGD(TAG, "PIC write ack: reg=0x%02X value=%u (0x%04X)", reg, value, value);
+  auto *n = register_name(reg);
+  if (n) {
+    ESP_LOGD(TAG, "PIC write ack: %s = %u (0x%04X)", n, value, value);
+  } else {
+    ESP_LOGD(TAG, "PIC write ack: reg=0x%02X value=%u (0x%04X)", reg, value, value);
+  }
 
   this->pop_write_queue_();
   this->on_register_update_callback_.call(reg, value);
@@ -186,7 +254,12 @@ void LitterRobot4Component::check_timeouts_() {
     if (millis() - pending.timestamp <= PENDING_TIMEOUT) {
       break;
     }
-    ESP_LOGW(TAG, "Read timeout for register 0x%02X", pending.reg);
+    auto *name = register_name(pending.reg);
+    if (name) {
+      ESP_LOGW(TAG, "Read timeout for %s (0x%02X)", name, pending.reg);
+    } else {
+      ESP_LOGW(TAG, "Read timeout for register 0x%02X", pending.reg);
+    }
     this->pop_read_queue_();
   }
 
@@ -195,9 +268,265 @@ void LitterRobot4Component::check_timeouts_() {
     if (millis() - pending.timestamp <= PENDING_TIMEOUT) {
       break;
     }
-    ESP_LOGW(TAG, "Write ack timeout for register 0x%02X", pending.reg);
+    auto *name = register_name(pending.reg);
+    if (name) {
+      ESP_LOGW(TAG, "Write ack timeout for %s (0x%02X)", name, pending.reg);
+    } else {
+      ESP_LOGW(TAG, "Write ack timeout for register 0x%02X", pending.reg);
+    }
     this->pop_write_queue_();
   }
 }
+void LitterRobot4Component::poll_registers() {
+  for (auto reg : POLL_REGISTERS) {
+    this->read_register(reg);
+  }
+}
+#ifdef USE_TEXT_SENSOR
+void LitterRobot4StatusTextSensor::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    switch (reg) {
+      case REG_ROBOT_STATUS:
+        this->robot_status_ = value;
+        break;
+      case REG_FAULT_CODE:
+        this->fault_code_ = value;
+        break;
+      case REG_WASTE_DRAWER_FULL:
+        this->waste_drawer_full_ = value != 0;
+        break;
+      default:
+        return;
+    }
+    this->update_display_();
+  });
+}
+
+void LitterRobot4StatusTextSensor::update_display_() {
+  if (this->waste_drawer_full_) {
+    this->publish_state("Waste drawer full");
+    return;
+  }
+  if (this->fault_code_ != 0) {
+    this->publish_state("Fault detected");
+    return;
+  }
+  auto *str = status_name(this->robot_status_);
+  if (str != nullptr) {
+    this->publish_state(str);
+  }
+}
+
+void LitterRobot4StatusTextSensor::dump_config() { LOG_TEXT_SENSOR("", "Litter Robot 4 Status", this); }
+#endif
+
+#ifdef USE_SENSOR
+void LitterRobot4WasteDrawerSensor::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_WASTE_DRAWER_PCT) {
+      this->publish_state(value);
+    }
+  });
+}
+
+void LitterRobot4WasteDrawerSensor::dump_config() { LOG_SENSOR("", "Litter Robot 4 Waste Drawer Level", this); }
+
+void LitterRobot4LitterLevelSensor::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_LITTER_LEVEL_RAW) {
+      float pct =
+          ((LITTER_EMPTY_RAW_DIST - static_cast<float>(value)) / (LITTER_EMPTY_RAW_DIST - LITTER_FULL_RAW_DIST)) *
+          100.0f;
+      if (pct > 100.0f)
+        pct = 100.0f;
+      if (pct < 0.0f)
+        pct = 0.0f;
+      this->publish_state(pct);
+    }
+  });
+}
+
+void LitterRobot4LitterLevelSensor::dump_config() { LOG_SENSOR("", "Litter Robot 4 Litter Level", this); }
+
+void LitterRobot4CatWeightSensor::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_CAT_WEIGHT) {
+      auto weight = static_cast<int16_t>(value) / 100.0f;
+      this->publish_state(weight);
+    }
+  });
+}
+
+void LitterRobot4CatWeightSensor::dump_config() { LOG_SENSOR("", "Litter Robot 4 Cat Weight", this); }
+
+void LitterRobot4CleanCycleCountSensor::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_CLEAN_CYCLE_COUNT) {
+      this->publish_state(value);
+    }
+  });
+}
+
+void LitterRobot4CleanCycleCountSensor::dump_config() { LOG_SENSOR("", "Litter Robot 4 Clean Cycle Count", this); }
+#endif
+
+#ifdef USE_NUMBER
+void LitterRobot4CycleDelayNumber::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_CLEAN_CYCLE_DELAY) {
+      this->publish_state(value);
+    }
+  });
+}
+
+void LitterRobot4CycleDelayNumber::control(float value) {
+  this->parent_->write_register(REG_CLEAN_CYCLE_DELAY, static_cast<uint16_t>(value));
+}
+
+void LitterRobot4CycleDelayNumber::dump_config() { LOG_NUMBER("", "Litter Robot 4 Clean Cycle Delay", this); }
+#endif
+
+#ifdef USE_SELECT
+static const char *brightness_to_option(uint16_t value) {
+  if (value == 25)
+    return "Low";
+  if (value == 50)
+    return "Medium";
+  if (value == 100)
+    return "High";
+  return nullptr;
+}
+
+static uint16_t option_to_brightness(const char *option) {
+  if (strcmp(option, "Low") == 0)
+    return 25;
+  if (strcmp(option, "Medium") == 0)
+    return 50;
+  return 100;
+}
+
+static const char *night_light_mode_to_option(uint16_t value) {
+  switch (value) {
+    case 0:
+      return "Off";
+    case 1:
+      return "On";
+    case 2:
+      return "Auto";
+    default:
+      return nullptr;
+  }
+}
+
+static uint16_t option_to_mode(const char *option) {
+  if (strcmp(option, "Off") == 0)
+    return 0;
+  if (strcmp(option, "On") == 0)
+    return 1;
+  return 2;
+}
+
+void LitterRobot4NightLightModeSelect::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_NIGHT_LIGHT_MODE) {
+      auto *opt = night_light_mode_to_option(value);
+      if (opt != nullptr && this->has_option(opt)) {
+        auto idx = this->index_of(opt);
+        if (idx.has_value())
+          this->publish_state(*idx);
+      }
+    }
+  });
+}
+
+void LitterRobot4NightLightModeSelect::control(size_t index) {
+  uint16_t value = option_to_mode(this->option_at(index));
+  this->parent_->write_register(REG_NIGHT_LIGHT_MODE, value);
+}
+
+void LitterRobot4NightLightModeSelect::dump_config() { LOG_SELECT("", "Litter Robot 4 Night Light Mode", this); }
+
+void LitterRobot4NightLightBrightnessSelect::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_NIGHT_LIGHT_BRIGHTNESS) {
+      auto *opt = brightness_to_option(value);
+      if (opt != nullptr && this->has_option(opt)) {
+        auto idx = this->index_of(opt);
+        if (idx.has_value())
+          this->publish_state(*idx);
+      }
+    }
+  });
+}
+
+void LitterRobot4NightLightBrightnessSelect::control(size_t index) {
+  uint16_t value = option_to_brightness(this->option_at(index));
+  this->parent_->write_register(REG_NIGHT_LIGHT_BRIGHTNESS, value);
+}
+
+void LitterRobot4NightLightBrightnessSelect::dump_config() {
+  LOG_SELECT("", "Litter Robot 4 Night Light Brightness", this);
+}
+
+static uint16_t option_to_panel_brightness(const char *option) {
+  if (strcmp(option, "Low") == 0)
+    return (25 << 8) | 15;
+  if (strcmp(option, "Medium") == 0)
+    return (50 << 8) | 40;
+  return (100 << 8) | 90;
+}
+
+void LitterRobot4PanelBrightnessSelect::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_PANEL_LED) {
+      auto *opt = brightness_to_option(value >> 8);
+      if (opt != nullptr && this->has_option(opt)) {
+        auto idx = this->index_of(opt);
+        if (idx.has_value())
+          this->publish_state(*idx);
+      }
+    }
+  });
+}
+
+void LitterRobot4PanelBrightnessSelect::control(size_t index) {
+  uint16_t value = option_to_panel_brightness(this->option_at(index));
+  this->parent_->write_register(REG_PANEL_LED, value);
+}
+
+void LitterRobot4PanelBrightnessSelect::dump_config() { LOG_SELECT("", "Litter Robot 4 Panel Brightness", this); }
+#endif
+
+#ifdef USE_SWITCH
+void LitterRobot4ControlPanelLockoutSwitch::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_PANEL_LOCKOUT) {
+      this->publish_state(value != 0);
+    }
+  });
+}
+
+void LitterRobot4ControlPanelLockoutSwitch::write_state(bool state) {
+  this->parent_->write_register(REG_PANEL_LOCKOUT, state ? 1 : 0);
+}
+
+void LitterRobot4ControlPanelLockoutSwitch::dump_config() {
+  LOG_SWITCH("", "Litter Robot 4 Control Panel Lockout", this);
+}
+#endif
+
+#ifdef USE_BINARY_SENSOR
+void LitterRobot4WasteDrawerFullBinarySensor::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_WASTE_DRAWER_FULL) {
+      this->publish_state(value != 0);
+    }
+  });
+}
+
+void LitterRobot4WasteDrawerFullBinarySensor::dump_config() {
+  LOG_BINARY_SENSOR("", "Litter Robot 4 Waste Drawer Full", this);
+}
+#endif
 
 }  // namespace esphome::litter_robot4
