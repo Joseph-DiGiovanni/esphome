@@ -21,6 +21,8 @@ LitterRobot4Component = litter_robot4_ns.class_(
     "LitterRobot4Component", uart.UARTDevice, cg.Component
 )
 
+CONF_LITTER_ROBOT4_ID = "litter_robot4_id"
+
 CONFIG_SCHEMA = (
     cv.Schema(
         {

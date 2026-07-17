@@ -1,2 +1,63 @@
 litter_robot4:
   id: my_litter_robot4
+
+text_sensor:
+  - platform: litter_robot4
+    name: "Status"
+
+sensor:
+  - platform: litter_robot4
+    type: waste_drawer_level
+    name: "Waste Drawer Level"
+  - platform: litter_robot4
+    type: litter_level
+    name: "Litter Level"
+  - platform: litter_robot4
+    type: cat_weight
+    name: "Cat Weight"
+  - platform: litter_robot4
+    type: clean_cycle_count
+    name: "Clean Cycles"
+
+button:
+  - platform: litter_robot4
+    type: cycle
+    name: "Manual Cycle"
+  - platform: litter_robot4
+    type: empty
+    name: "Empty Litter"
+  - platform: litter_robot4
+    type: replace_filter
+    name: "Replace Filter"
+  - platform: litter_robot4
+    type: factory_reset
+    name: "Factory Reset"
+  - platform: litter_robot4
+    type: power
+    name: "Power"
+  - platform: litter_robot4
+    type: reset
+    name: "Reset"
+
+number:
+  - platform: litter_robot4
+    name: "Clean Cycle Delay"
+
+select:
+  - platform: litter_robot4
+    type: night_light_mode
+    name: "Night Light Mode"
+  - platform: litter_robot4
+    type: night_light_brightness
+    name: "Night Light Brightness"
+  - platform: litter_robot4
+    type: panel_brightness
+    name: "Panel Brightness"
+
+switch:
+  - platform: litter_robot4
+    name: "Control Panel Lockout"
+
+binary_sensor:
+  - platform: litter_robot4
+    name: "Waste Drawer Full"
