@@ -155,6 +155,10 @@ void LitterRobot4Component::handle_frame_(uint8_t direction, uint8_t operation, 
 }
 
 void LitterRobot4Component::handle_event_(uint8_t reg, uint16_t value) {
+  if (reg == REG_FACTORY_RESET && value == CMD_FACTORY_RESET) {
+    this->set_timeout(3000, [this]() { this->poll_registers(); });
+  }
+
   auto *name = register_name(reg);
   if (name) {
     ESP_LOGD(TAG, "PIC write: %s = %u (0x%04X)", name, value, value);
