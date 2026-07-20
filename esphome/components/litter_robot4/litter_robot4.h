@@ -46,6 +46,21 @@ enum Register : uint8_t {
   REG_PANEL_LOCKOUT = 0x17,
   REG_NIGHT_LIGHT_MODE = 0x18,
   REG_NIGHT_LIGHT_BRIGHTNESS = 0x19,
+  REG_SLEEP_DAY_MASK = 0x1D,
+  REG_SLEEP_SUN = 0x1E,
+  REG_WAKE_SUN = 0x1F,
+  REG_SLEEP_MON = 0x20,
+  REG_WAKE_MON = 0x21,
+  REG_SLEEP_TUE = 0x22,
+  REG_WAKE_TUE = 0x23,
+  REG_SLEEP_WED = 0x24,
+  REG_WAKE_WED = 0x25,
+  REG_SLEEP_THU = 0x26,
+  REG_WAKE_THU = 0x27,
+  REG_SLEEP_FRI = 0x28,
+  REG_WAKE_FRI = 0x29,
+  REG_SLEEP_SAT = 0x2A,
+  REG_WAKE_SAT = 0x2B,
   REG_FACTORY_RESET = 0x2D,
   REG_ROBOT_STATUS = 0x34,
   REG_FAULT_CODE = 0x35,
@@ -70,6 +85,16 @@ enum KeypadCommand : uint16_t {
   CMD_KEYPAD_CYCLE = 0x0201,
   CMD_KEYPAD_EMPTY = 0x0801,
   CMD_KEYPAD_WIFI = 0x1001,
+};
+
+enum DayOfWeek : uint8_t {
+  DAY_SUN,
+  DAY_MON,
+  DAY_TUE,
+  DAY_WED,
+  DAY_THU,
+  DAY_FRI,
+  DAY_SAT,
 };
 
 // Litter level distance mapping
@@ -104,6 +129,7 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
 
   void read_register(uint8_t reg);
   void write_register(uint8_t reg, uint16_t value);
+  void write_sleep_day_enabled(DayOfWeek day, bool enabled);
   void poll_registers();
 
   template<typename F> void add_on_register_update_callback(F &&callback) {
@@ -128,6 +154,7 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
 
   LazyCallbackManager<void(uint8_t, uint16_t)> on_register_update_callback_;
 
+  uint16_t sleep_mask_{0};
   bool api_was_connected_{false};
 };
 
