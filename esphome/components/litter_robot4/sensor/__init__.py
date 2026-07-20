@@ -13,13 +13,13 @@ from .. import CONF_LITTER_ROBOT4_ID, LitterRobot4Component, litter_robot4_ns
 
 DEPENDENCIES = ["litter_robot4"]
 
-WasteDrawerSensor = litter_robot4_ns.class_(
+LitterRobot4WasteDrawerSensor = litter_robot4_ns.class_(
     "LitterRobot4WasteDrawerSensor",
     sensor.Sensor,
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
-LitterLevelSensor = litter_robot4_ns.class_(
+LitterRobot4LitterLevelSensor = litter_robot4_ns.class_(
     "LitterRobot4LitterLevelSensor",
     sensor.Sensor,
     cg.Component,
@@ -72,10 +72,10 @@ def _sensor_schema(
 CONFIG_SCHEMA = cv.typed_schema(
     {
         "waste_drawer_level": _sensor_schema(
-            WasteDrawerSensor, unit=UNIT_PERCENT, icon="mdi:inbox"
+            LitterRobot4WasteDrawerSensor, unit=UNIT_PERCENT, icon="mdi:inbox"
         ),
         "litter_level": _sensor_schema(
-            LitterLevelSensor, unit=UNIT_PERCENT, icon="mdi:tray-full"
+            LitterRobot4LitterLevelSensor, unit=UNIT_PERCENT, icon="mdi:tray-full"
         ),
         "cat_weight": _sensor_schema(
             CatWeightSensor,

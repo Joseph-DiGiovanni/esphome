@@ -4,28 +4,6 @@
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
 
-#ifdef USE_TEXT_SENSOR
-#include "esphome/components/text_sensor/text_sensor.h"
-#endif
-#ifdef USE_BUTTON
-#include "esphome/components/button/button.h"
-#endif
-#ifdef USE_SENSOR
-#include "esphome/components/sensor/sensor.h"
-#endif
-#ifdef USE_NUMBER
-#include "esphome/components/number/number.h"
-#endif
-#ifdef USE_SELECT
-#include "esphome/components/select/select.h"
-#endif
-#ifdef USE_SWITCH
-#include "esphome/components/switch/switch.h"
-#endif
-#ifdef USE_BINARY_SENSOR
-#include "esphome/components/binary_sensor/binary_sensor.h"
-#endif
-
 namespace esphome::litter_robot4 {
 
 enum Direction : uint8_t {
@@ -98,67 +76,18 @@ enum KeypadCommand : uint16_t {
 static const float LITTER_EMPTY_RAW_DIST = 490.0f;
 static const float LITTER_FULL_RAW_DIST = 440.0f;
 
-static const Register POLL_REGISTERS[] = {
-    REG_ROBOT_STATUS,      REG_FAULT_CODE,        REG_CLEAN_CYCLE_COUNT, REG_WASTE_DRAWER_PCT,
-    REG_WASTE_DRAWER_FULL, REG_LITTER_LEVEL_RAW,  REG_NIGHT_LIGHT_MODE,  REG_NIGHT_LIGHT_BRIGHTNESS,
-    REG_PANEL_LED,         REG_CLEAN_CYCLE_DELAY, REG_PANEL_LOCKOUT};
-
 struct RegisterInfo {
   Register reg;
   const char *name;
 };
-
-static const RegisterInfo REGISTER_NAMES[] = {
-    {REG_KEYPAD, "Keypad"},
-    {REG_CAT_WEIGHT, "Cat Weight"},
-    {REG_PANEL_LED, "Panel LED"},
-    {REG_CLEAN_CYCLE_DELAY, "Clean Cycle Delay"},
-    {REG_PANEL_LOCKOUT, "Control Panel Lockout"},
-    {REG_FACTORY_RESET, "Factory Reset"},
-    {REG_NIGHT_LIGHT_MODE, "Night Light Mode"},
-    {REG_NIGHT_LIGHT_BRIGHTNESS, "Night Light Brightness"},
-    {REG_ROBOT_STATUS, "Robot Status"},
-    {REG_FAULT_CODE, "Fault Code"},
-    {REG_CLEAN_CYCLE_COUNT, "Clean Cycle Count"},
-    {REG_WASTE_DRAWER_PCT, "Waste Drawer Percent"},
-    {REG_WASTE_DRAWER_FULL, "Waste Drawer Full"},
-    {REG_LITTER_LEVEL_RAW, "Litter Level Raw Distance"},
-};
-
-inline const char *register_name(uint8_t reg) {
-  for (const auto &info : REGISTER_NAMES) {
-    if (info.reg == reg)
-      return info.name;
-  }
-  return nullptr;
-}
 
 struct StatusInfo {
   RobotStatus status;
   const char *name;
 };
 
-static const StatusInfo STATUS_NAMES[] = {
-    {STATUS_POWERED_OFF, "Powered off"},
-    {STATUS_POWERING_ON, "Powering on"},
-    {STATUS_POWERING_OFF, "Powering off"},
-    {STATUS_READY, "Ready"},
-    {STATUS_BONNET_REMOVED, "Bonnet removed"},
-    {STATUS_CAT_DETECTED, "Cat detected"},
-    {STATUS_CLEAN_CYCLE, "Clean cycle in progress"},
-    {STATUS_EMPTYING, "Emptying litter"},
-    {STATUS_FILTER_REPLACEMENT, "Filter replacement in progress"},
-    {STATUS_START_CALIBRATION, "Starting calibration"},
-    {STATUS_CALIBRATING, "Calibration in progress"},
-};
-
-inline const char *status_name(uint16_t status) {
-  for (const auto &info : STATUS_NAMES) {
-    if (info.status == status)
-      return info.name;
-  }
-  return nullptr;
-}
+const char *register_name(uint8_t reg);
+const char *status_name(uint16_t status);
 
 struct PendingRead {
   uint8_t reg{0};
@@ -208,152 +137,5 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
 
   bool api_was_connected_{false};
 };
-
-#ifdef USE_TEXT_SENSOR
-class LitterRobot4StatusTextSensor : public text_sensor::TextSensor,
-                                     public Component,
-                                     public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
-
- protected:
-  uint16_t robot_status_{0};
-  uint16_t fault_code_{0};
-  bool waste_drawer_full_{false};
-  void update_display_();
-};
-#endif
-
-#ifdef USE_BUTTON
-class LitterRobot4CycleButton : public button::Button, public Component, public Parented<LitterRobot4Component> {
- public:
-  void press_action() override { this->parent_->write_register(REG_ROBOT_STATUS, CMD_START_CLEAN); }
-};
-
-class LitterRobot4EmptyButton : public button::Button, public Component, public Parented<LitterRobot4Component> {
- public:
-  void press_action() override { this->parent_->write_register(REG_ROBOT_STATUS, CMD_EMPTY_LITTER); }
-};
-
-class LitterRobot4ReplaceFilterButton : public button::Button,
-                                        public Component,
-                                        public Parented<LitterRobot4Component> {
- public:
-  void press_action() override { this->parent_->write_register(REG_ROBOT_STATUS, CMD_REPLACE_FILTER); }
-};
-
-class LitterRobot4FactoryResetButton : public button::Button, public Component, public Parented<LitterRobot4Component> {
- public:
-  void press_action() override { this->parent_->write_register(REG_FACTORY_RESET, CMD_FACTORY_RESET); }
-};
-
-class LitterRobot4PowerButton : public button::Button, public Component, public Parented<LitterRobot4Component> {
- public:
-  void press_action() override { this->parent_->write_register(REG_KEYPAD, CMD_KEYPAD_POWER); }
-};
-
-class LitterRobot4ResetButton : public button::Button, public Component, public Parented<LitterRobot4Component> {
- public:
-  void press_action() override { this->parent_->write_register(REG_KEYPAD, CMD_KEYPAD_RESET); }
-};
-#endif
-
-#ifdef USE_SENSOR
-class LitterRobot4WasteDrawerSensor : public sensor::Sensor, public Component, public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
-};
-
-class LitterRobot4LitterLevelSensor : public sensor::Sensor, public Component, public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
-};
-
-class LitterRobot4CatWeightSensor : public sensor::Sensor, public Component, public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
-};
-
-class LitterRobot4CleanCycleCountSensor : public sensor::Sensor,
-                                          public Component,
-                                          public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
-};
-#endif
-
-#ifdef USE_NUMBER
-class LitterRobot4CycleDelayNumber : public number::Number, public Component, public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
-
- protected:
-  void control(float value) override;
-};
-#endif
-
-#ifdef USE_SELECT
-class LitterRobot4NightLightModeSelect : public select::Select,
-                                         public Component,
-                                         public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
-
- protected:
-  void control(size_t index) override;
-};
-
-class LitterRobot4NightLightBrightnessSelect : public select::Select,
-                                               public Component,
-                                               public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
-
- protected:
-  void control(size_t index) override;
-};
-
-class LitterRobot4PanelBrightnessSelect : public select::Select,
-                                          public Component,
-                                          public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
-
- protected:
-  void control(size_t index) override;
-};
-#endif
-
-#ifdef USE_SWITCH
-class LitterRobot4ControlPanelLockoutSwitch : public switch_::Switch,
-                                              public Component,
-                                              public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
-
- protected:
-  void write_state(bool state) override;
-};
-#endif
-
-#ifdef USE_BINARY_SENSOR
-class LitterRobot4WasteDrawerFullBinarySensor : public binary_sensor::BinarySensor,
-                                                public Component,
-                                                public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
-};
-#endif
 
 }  // namespace esphome::litter_robot4
