@@ -21,6 +21,13 @@ static const Register POLL_REGISTERS[] = {
 static const RegisterInfo REGISTER_NAMES[] = {
     {REG_KEYPAD, "Keypad"},
     {REG_CAT_WEIGHT, "Cat Weight"},
+    {REG_TIME_DOW, "Time Day of Week"},
+    {REG_TIME_HOUR, "Time Hour"},
+    {REG_TIME_MINUTE, "Time Minute"},
+    {REG_TIME_SECOND, "Time Second"},
+    {REG_TIME_DAY, "Time Day"},
+    {REG_TIME_MONTH, "Time Month"},
+    {REG_TIME_YEAR, "Time Year"},
     {REG_PANEL_LED, "Panel LED"},
     {REG_CLEAN_CYCLE_DELAY, "Clean Cycle Delay"},
     {REG_PANEL_LOCKOUT, "Control Panel Lockout"},
@@ -92,8 +99,15 @@ void LitterRobot4Component::loop() {
   bool connected = api::global_api_server->is_connected();
   if (connected && !this->api_was_connected_) {
     this->poll_registers();
+    this->sync_time_();
   }
   this->api_was_connected_ = connected;
+#endif
+
+#ifdef USE_TIME
+  if (this->time_id_ != nullptr && millis() - this->last_time_sync_ > SYNC_TIME_INTERVAL) {
+    this->sync_time_();
+  }
 #endif
 }
 
@@ -239,7 +253,10 @@ void LitterRobot4Component::handle_frame_(uint8_t direction, uint8_t operation, 
 
 void LitterRobot4Component::handle_event_(uint8_t reg, uint16_t value) {
   if (reg == REG_FACTORY_RESET && value == CMD_FACTORY_RESET) {
-    this->set_timeout(3000, [this]() { this->poll_registers(); });
+    this->set_timeout(3000, [this]() {
+      this->poll_registers();
+      this->sync_time_();
+    });
   }
 
   if (reg == REG_SLEEP_DAY_MASK) {
@@ -377,6 +394,28 @@ void LitterRobot4Component::poll_registers() {
   for (auto reg : POLL_REGISTERS) {
     this->read_register(reg);
   }
+}
+
+void LitterRobot4Component::sync_time_() {
+#ifdef USE_TIME
+  if (this->time_id_ == nullptr)
+    return;
+  auto now = this->time_id_->now();
+  if (!now.is_valid())
+    return;
+  // ESPHome Time uses Sunday=1, PIC uses Sunday=0.
+  this->write_register(REG_TIME_DOW, now.day_of_week - 1);
+  this->write_register(REG_TIME_HOUR, now.hour);
+  this->write_register(REG_TIME_MINUTE, now.minute);
+  this->write_register(REG_TIME_SECOND, now.second);
+  this->write_register(REG_TIME_DAY, now.day_of_month);
+  this->write_register(REG_TIME_MONTH, now.month);
+  // Original firmware writes only last 2 digits of year.
+  this->write_register(REG_TIME_YEAR, now.year % 100);
+  this->last_time_sync_ = millis();
+  ESP_LOGD(TAG, "Time synced: %04d-%02d-%02d %02d:%02d:%02d DOW=%d", now.year, now.month, now.day_of_month, now.hour,
+           now.minute, now.second, now.day_of_week - 1);
+#endif
 }
 
 }  // namespace esphome::litter_robot4

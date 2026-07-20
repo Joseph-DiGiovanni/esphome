@@ -1,7 +1,7 @@
 import esphome.codegen as cg
-from esphome.components import uart
+from esphome.components import time, uart
 import esphome.config_validation as cv
-from esphome.const import CONF_ID
+from esphome.const import CONF_ID, CONF_TIME_ID
 
 CODEOWNERS = ["@Joseph-DiGiovanni"]
 DEPENDENCIES = ["uart"]
@@ -27,6 +27,7 @@ CONFIG_SCHEMA = (
     cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(LitterRobot4Component),
+            cv.Optional(CONF_TIME_ID): cv.use_id(time.RealTimeClock),
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
@@ -39,3 +40,6 @@ async def to_code(config):
     await cg.register_component(var, config)
     await uart.register_uart_device(var, config)
     cg.add_global(litter_robot4_ns.using)
+    if (time_id := config.get(CONF_TIME_ID)) is not None:
+        time_ = await cg.get_variable(time_id)
+        cg.add(var.set_time_id(time_))
