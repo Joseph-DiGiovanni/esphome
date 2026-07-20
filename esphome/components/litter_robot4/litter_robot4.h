@@ -89,12 +89,8 @@ struct StatusInfo {
 const char *register_name(uint8_t reg);
 const char *status_name(uint16_t status);
 
-struct PendingRead {
-  uint8_t reg{0};
-  uint32_t timestamp{0};
-};
-
-struct PendingWrite {
+struct PendingOperation {
+  bool is_write{false};
   uint8_t reg{0};
   uint16_t value{0};
   uint32_t timestamp{0};
@@ -121,17 +117,14 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
   void handle_event_(uint8_t reg, uint16_t value);
   void handle_read_reply_(uint8_t reg, uint16_t value);
   void handle_write_ack_(uint8_t reg, uint16_t value);
-  void pop_read_queue_();
-  void pop_write_queue_();
+  void pop_queue_();
   void check_timeouts_();
 
   uint8_t rx_buf_[FRAME_LENGTH];
   uint8_t rx_count_{0};
 
-  PendingRead read_queue_[MAX_PENDING];
-  PendingWrite write_queue_[MAX_PENDING];
-  uint8_t read_head_{0}, read_tail_{0}, read_count_{0};
-  uint8_t write_head_{0}, write_tail_{0}, write_count_{0};
+  PendingOperation op_queue_[MAX_PENDING];
+  uint8_t op_head_{0}, op_tail_{0}, op_count_{0};
 
   LazyCallbackManager<void(uint8_t, uint16_t)> on_register_update_callback_;
 

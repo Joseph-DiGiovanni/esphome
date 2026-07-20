@@ -87,46 +87,48 @@ void LitterRobot4Component::dump_config() {
 }
 
 void LitterRobot4Component::read_register(uint8_t reg) {
-  if (this->read_count_ >= MAX_PENDING) {
+  if (this->op_count_ >= MAX_PENDING) {
     auto *name = register_name(reg);
     if (name) {
-      ESP_LOGW(TAG, "Read queue full, dropping read for %s (0x%02X)", name, reg);
+      ESP_LOGW(TAG, "Operation queue full, dropping read for %s (0x%02X)", name, reg);
     } else {
-      ESP_LOGW(TAG, "Read queue full, dropping read for register 0x%02X", reg);
+      ESP_LOGW(TAG, "Operation queue full, dropping read for register 0x%02X", reg);
     }
     return;
   }
 
-  auto &pending = this->read_queue_[this->read_tail_];
-  pending.reg = reg;
-  pending.timestamp = millis();
-  this->read_tail_ = (this->read_tail_ + 1) % MAX_PENDING;
-  this->read_count_++;
+  auto &op = this->op_queue_[this->op_tail_];
+  op.is_write = false;
+  op.reg = reg;
+  op.timestamp = millis();
+  this->op_tail_ = (this->op_tail_ + 1) % MAX_PENDING;
+  this->op_count_++;
 
-  if (this->read_count_ == 1) {
+  if (this->op_count_ == 1) {
     this->send_frame_(OP_READ, reg, 0);
   }
 }
 
 void LitterRobot4Component::write_register(uint8_t reg, uint16_t value) {
-  if (this->write_count_ >= MAX_PENDING) {
+  if (this->op_count_ >= MAX_PENDING) {
     auto *name = register_name(reg);
     if (name) {
-      ESP_LOGW(TAG, "Write queue full, dropping write for %s (0x%02X)", name, reg);
+      ESP_LOGW(TAG, "Operation queue full, dropping write for %s (0x%02X)", name, reg);
     } else {
-      ESP_LOGW(TAG, "Write queue full, dropping write for register 0x%02X", reg);
+      ESP_LOGW(TAG, "Operation queue full, dropping write for register 0x%02X", reg);
     }
     return;
   }
 
-  auto &pending = this->write_queue_[this->write_tail_];
-  pending.reg = reg;
-  pending.value = value;
-  pending.timestamp = millis();
-  this->write_tail_ = (this->write_tail_ + 1) % MAX_PENDING;
-  this->write_count_++;
+  auto &op = this->op_queue_[this->op_tail_];
+  op.is_write = true;
+  op.reg = reg;
+  op.value = value;
+  op.timestamp = millis();
+  this->op_tail_ = (this->op_tail_ + 1) % MAX_PENDING;
+  this->op_count_++;
 
-  if (this->write_count_ == 1) {
+  if (this->op_count_ == 1) {
     this->send_frame_(OP_WRITE, reg, value);
   }
 }
@@ -222,7 +224,7 @@ void LitterRobot4Component::handle_event_(uint8_t reg, uint16_t value) {
 }
 
 void LitterRobot4Component::handle_read_reply_(uint8_t reg, uint16_t value) {
-  if (this->read_count_ == 0) {
+  if (this->op_count_ == 0) {
     auto *name = register_name(reg);
     if (name) {
       ESP_LOGD(TAG, "Unexpected read reply for %s (0x%02X)", name, reg);
@@ -232,12 +234,18 @@ void LitterRobot4Component::handle_read_reply_(uint8_t reg, uint16_t value) {
     return;
   }
 
-  auto &pending = this->read_queue_[this->read_head_];
-  if (pending.reg != reg) {
-    auto *exp = register_name(pending.reg);
+  auto &op = this->op_queue_[this->op_head_];
+  if (op.is_write) {
     auto *got = register_name(reg);
-    ESP_LOGW(TAG, "Read reply mismatch: expected %s (0x%02X) got %s (0x%02X)", exp ? exp : "?", pending.reg,
-             got ? got : "?", reg);
+    ESP_LOGW(TAG, "Unexpected read reply for %s (0x%02X): queue head is a write", got ? got : "?", reg);
+    return;
+  }
+
+  if (op.reg != reg) {
+    auto *exp = register_name(op.reg);
+    auto *got = register_name(reg);
+    ESP_LOGW(TAG, "Read reply mismatch: expected %s (0x%02X) got %s (0x%02X)", exp ? exp : "?", op.reg, got ? got : "?",
+             reg);
     return;
   }
 
@@ -249,11 +257,11 @@ void LitterRobot4Component::handle_read_reply_(uint8_t reg, uint16_t value) {
   }
 
   this->on_register_update_callback_.call(reg, value);
-  this->pop_read_queue_();
+  this->pop_queue_();
 }
 
 void LitterRobot4Component::handle_write_ack_(uint8_t reg, uint16_t value) {
-  if (this->write_count_ == 0) {
+  if (this->op_count_ == 0) {
     auto *name = register_name(reg);
     if (name) {
       ESP_LOGD(TAG, "Unexpected write ack for %s (0x%02X)", name, reg);
@@ -263,12 +271,18 @@ void LitterRobot4Component::handle_write_ack_(uint8_t reg, uint16_t value) {
     return;
   }
 
-  auto &pending = this->write_queue_[this->write_head_];
-  if (pending.reg != reg || pending.value != value) {
-    auto *exp = register_name(pending.reg);
+  auto &op = this->op_queue_[this->op_head_];
+  if (!op.is_write) {
     auto *got = register_name(reg);
-    ESP_LOGW(TAG, "Write ack mismatch: expected %s (0x%02X)=0x%04X got %s (0x%02X)=0x%04X", exp ? exp : "?",
-             pending.reg, pending.value, got ? got : "?", reg, value);
+    ESP_LOGW(TAG, "Unexpected write ack for %s (0x%02X): queue head is a read", got ? got : "?", reg);
+    return;
+  }
+
+  if (op.reg != reg || op.value != value) {
+    auto *exp = register_name(op.reg);
+    auto *got = register_name(reg);
+    ESP_LOGW(TAG, "Write ack mismatch: expected %s (0x%02X)=0x%04X got %s (0x%02X)=0x%04X", exp ? exp : "?", op.reg,
+             op.value, got ? got : "?", reg, value);
     return;
   }
 
@@ -279,61 +293,49 @@ void LitterRobot4Component::handle_write_ack_(uint8_t reg, uint16_t value) {
     ESP_LOGD(TAG, "PIC write ack: reg=0x%02X value=%u (0x%04X)", reg, value, value);
   }
 
-  this->pop_write_queue_();
+  this->pop_queue_();
   this->on_register_update_callback_.call(reg, value);
 }
 
-void LitterRobot4Component::pop_read_queue_() {
-  this->read_head_ = (this->read_head_ + 1) % MAX_PENDING;
-  this->read_count_--;
+void LitterRobot4Component::pop_queue_() {
+  this->op_head_ = (this->op_head_ + 1) % MAX_PENDING;
+  this->op_count_--;
 
-  if (this->read_count_ > 0) {
-    auto &next = this->read_queue_[this->read_head_];
-    this->send_frame_(OP_READ, next.reg, 0);
-    next.timestamp = millis();
-  }
-}
-
-void LitterRobot4Component::pop_write_queue_() {
-  this->write_head_ = (this->write_head_ + 1) % MAX_PENDING;
-  this->write_count_--;
-
-  if (this->write_count_ > 0) {
-    auto &next = this->write_queue_[this->write_head_];
-    this->send_frame_(OP_WRITE, next.reg, next.value);
+  if (this->op_count_ > 0) {
+    auto &next = this->op_queue_[this->op_head_];
+    if (next.is_write) {
+      this->send_frame_(OP_WRITE, next.reg, next.value);
+    } else {
+      this->send_frame_(OP_READ, next.reg, 0);
+    }
     next.timestamp = millis();
   }
 }
 
 void LitterRobot4Component::check_timeouts_() {
-  while (this->read_count_ > 0) {
-    auto &pending = this->read_queue_[this->read_head_];
-    if (millis() - pending.timestamp <= PENDING_TIMEOUT) {
+  while (this->op_count_ > 0) {
+    auto &op = this->op_queue_[this->op_head_];
+    if (millis() - op.timestamp <= PENDING_TIMEOUT) {
       break;
     }
-    auto *name = register_name(pending.reg);
-    if (name) {
-      ESP_LOGW(TAG, "Read timeout for %s (0x%02X)", name, pending.reg);
+    auto *name = register_name(op.reg);
+    if (op.is_write) {
+      if (name) {
+        ESP_LOGW(TAG, "Write ack timeout for %s (0x%02X)", name, op.reg);
+      } else {
+        ESP_LOGW(TAG, "Write ack timeout for register 0x%02X", op.reg);
+      }
     } else {
-      ESP_LOGW(TAG, "Read timeout for register 0x%02X", pending.reg);
+      if (name) {
+        ESP_LOGW(TAG, "Read timeout for %s (0x%02X)", name, op.reg);
+      } else {
+        ESP_LOGW(TAG, "Read timeout for register 0x%02X", op.reg);
+      }
     }
-    this->pop_read_queue_();
-  }
-
-  while (this->write_count_ > 0) {
-    auto &pending = this->write_queue_[this->write_head_];
-    if (millis() - pending.timestamp <= PENDING_TIMEOUT) {
-      break;
-    }
-    auto *name = register_name(pending.reg);
-    if (name) {
-      ESP_LOGW(TAG, "Write ack timeout for %s (0x%02X)", name, pending.reg);
-    } else {
-      ESP_LOGW(TAG, "Write ack timeout for register 0x%02X", pending.reg);
-    }
-    this->pop_write_queue_();
+    this->pop_queue_();
   }
 }
+
 void LitterRobot4Component::poll_registers() {
   for (auto reg : POLL_REGISTERS) {
     this->read_register(reg);
