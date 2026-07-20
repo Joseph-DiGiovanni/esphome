@@ -9,6 +9,58 @@ namespace esphome::litter_robot4 {
 
 static const char *const TAG = "litter_robot4";
 
+static const Register POLL_REGISTERS[] = {
+    REG_ROBOT_STATUS,      REG_FAULT_CODE,        REG_CLEAN_CYCLE_COUNT, REG_WASTE_DRAWER_PCT,
+    REG_WASTE_DRAWER_FULL, REG_LITTER_LEVEL_RAW,  REG_NIGHT_LIGHT_MODE,  REG_NIGHT_LIGHT_BRIGHTNESS,
+    REG_PANEL_LED,         REG_CLEAN_CYCLE_DELAY, REG_PANEL_LOCKOUT};
+
+static const RegisterInfo REGISTER_NAMES[] = {
+    {REG_KEYPAD, "Keypad"},
+    {REG_CAT_WEIGHT, "Cat Weight"},
+    {REG_PANEL_LED, "Panel LED"},
+    {REG_CLEAN_CYCLE_DELAY, "Clean Cycle Delay"},
+    {REG_PANEL_LOCKOUT, "Control Panel Lockout"},
+    {REG_FACTORY_RESET, "Factory Reset"},
+    {REG_NIGHT_LIGHT_MODE, "Night Light Mode"},
+    {REG_NIGHT_LIGHT_BRIGHTNESS, "Night Light Brightness"},
+    {REG_ROBOT_STATUS, "Robot Status"},
+    {REG_FAULT_CODE, "Fault Code"},
+    {REG_CLEAN_CYCLE_COUNT, "Clean Cycle Count"},
+    {REG_WASTE_DRAWER_PCT, "Waste Drawer Percent"},
+    {REG_WASTE_DRAWER_FULL, "Waste Drawer Full"},
+    {REG_LITTER_LEVEL_RAW, "Litter Level Raw Distance"},
+};
+
+static const StatusInfo STATUS_NAMES[] = {
+    {STATUS_POWERED_OFF, "Powered off"},
+    {STATUS_POWERING_ON, "Powering on"},
+    {STATUS_POWERING_OFF, "Powering off"},
+    {STATUS_READY, "Ready"},
+    {STATUS_BONNET_REMOVED, "Bonnet removed"},
+    {STATUS_CAT_DETECTED, "Cat detected"},
+    {STATUS_CLEAN_CYCLE, "Clean cycle in progress"},
+    {STATUS_EMPTYING, "Emptying litter"},
+    {STATUS_FILTER_REPLACEMENT, "Filter replacement in progress"},
+    {STATUS_START_CALIBRATION, "Starting calibration"},
+    {STATUS_CALIBRATING, "Calibration in progress"},
+};
+
+const char *register_name(uint8_t reg) {
+  for (const auto &info : REGISTER_NAMES) {
+    if (info.reg == reg)
+      return info.name;
+  }
+  return nullptr;
+}
+
+const char *status_name(uint16_t status) {
+  for (const auto &info : STATUS_NAMES) {
+    if (info.status == status)
+      return info.name;
+  }
+  return nullptr;
+}
+
 void LitterRobot4Component::setup() {}
 
 void LitterRobot4Component::loop() {
@@ -287,251 +339,5 @@ void LitterRobot4Component::poll_registers() {
     this->read_register(reg);
   }
 }
-#ifdef USE_TEXT_SENSOR
-void LitterRobot4StatusTextSensor::setup() {
-  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
-    switch (reg) {
-      case REG_ROBOT_STATUS:
-        this->robot_status_ = value;
-        break;
-      case REG_FAULT_CODE:
-        this->fault_code_ = value;
-        break;
-      case REG_WASTE_DRAWER_FULL:
-        this->waste_drawer_full_ = value != 0;
-        break;
-      default:
-        return;
-    }
-    this->update_display_();
-  });
-}
-
-void LitterRobot4StatusTextSensor::update_display_() {
-  if (this->waste_drawer_full_) {
-    this->publish_state("Waste drawer full");
-    return;
-  }
-  if (this->fault_code_ != 0) {
-    this->publish_state("Fault detected");
-    return;
-  }
-  auto *str = status_name(this->robot_status_);
-  if (str != nullptr) {
-    this->publish_state(str);
-  }
-}
-
-void LitterRobot4StatusTextSensor::dump_config() { LOG_TEXT_SENSOR("", "Litter Robot 4 Status", this); }
-#endif
-
-#ifdef USE_SENSOR
-void LitterRobot4WasteDrawerSensor::setup() {
-  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
-    if (reg == REG_WASTE_DRAWER_PCT) {
-      this->publish_state(value);
-    }
-  });
-}
-
-void LitterRobot4WasteDrawerSensor::dump_config() { LOG_SENSOR("", "Litter Robot 4 Waste Drawer Level", this); }
-
-void LitterRobot4LitterLevelSensor::setup() {
-  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
-    if (reg == REG_LITTER_LEVEL_RAW) {
-      float pct =
-          ((LITTER_EMPTY_RAW_DIST - static_cast<float>(value)) / (LITTER_EMPTY_RAW_DIST - LITTER_FULL_RAW_DIST)) *
-          100.0f;
-      if (pct > 100.0f)
-        pct = 100.0f;
-      if (pct < 0.0f)
-        pct = 0.0f;
-      this->publish_state(pct);
-    }
-  });
-}
-
-void LitterRobot4LitterLevelSensor::dump_config() { LOG_SENSOR("", "Litter Robot 4 Litter Level", this); }
-
-void LitterRobot4CatWeightSensor::setup() {
-  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
-    if (reg == REG_CAT_WEIGHT) {
-      auto weight = static_cast<int16_t>(value) / 100.0f;
-      this->publish_state(weight);
-    }
-  });
-}
-
-void LitterRobot4CatWeightSensor::dump_config() { LOG_SENSOR("", "Litter Robot 4 Cat Weight", this); }
-
-void LitterRobot4CleanCycleCountSensor::setup() {
-  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
-    if (reg == REG_CLEAN_CYCLE_COUNT) {
-      this->publish_state(value);
-    }
-  });
-}
-
-void LitterRobot4CleanCycleCountSensor::dump_config() { LOG_SENSOR("", "Litter Robot 4 Clean Cycle Count", this); }
-#endif
-
-#ifdef USE_NUMBER
-void LitterRobot4CycleDelayNumber::setup() {
-  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
-    if (reg == REG_CLEAN_CYCLE_DELAY) {
-      this->publish_state(value);
-    }
-  });
-}
-
-void LitterRobot4CycleDelayNumber::control(float value) {
-  this->parent_->write_register(REG_CLEAN_CYCLE_DELAY, static_cast<uint16_t>(value));
-}
-
-void LitterRobot4CycleDelayNumber::dump_config() { LOG_NUMBER("", "Litter Robot 4 Clean Cycle Delay", this); }
-#endif
-
-#ifdef USE_SELECT
-static const char *brightness_to_option(uint16_t value) {
-  if (value == 25)
-    return "Low";
-  if (value == 50)
-    return "Medium";
-  if (value == 100)
-    return "High";
-  return nullptr;
-}
-
-static uint16_t option_to_brightness(const char *option) {
-  if (strcmp(option, "Low") == 0)
-    return 25;
-  if (strcmp(option, "Medium") == 0)
-    return 50;
-  return 100;
-}
-
-static const char *night_light_mode_to_option(uint16_t value) {
-  switch (value) {
-    case 0:
-      return "Off";
-    case 1:
-      return "On";
-    case 2:
-      return "Auto";
-    default:
-      return nullptr;
-  }
-}
-
-static uint16_t option_to_mode(const char *option) {
-  if (strcmp(option, "Off") == 0)
-    return 0;
-  if (strcmp(option, "On") == 0)
-    return 1;
-  return 2;
-}
-
-void LitterRobot4NightLightModeSelect::setup() {
-  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
-    if (reg == REG_NIGHT_LIGHT_MODE) {
-      auto *opt = night_light_mode_to_option(value);
-      if (opt != nullptr && this->has_option(opt)) {
-        auto idx = this->index_of(opt);
-        if (idx.has_value())
-          this->publish_state(*idx);
-      }
-    }
-  });
-}
-
-void LitterRobot4NightLightModeSelect::control(size_t index) {
-  uint16_t value = option_to_mode(this->option_at(index));
-  this->parent_->write_register(REG_NIGHT_LIGHT_MODE, value);
-}
-
-void LitterRobot4NightLightModeSelect::dump_config() { LOG_SELECT("", "Litter Robot 4 Night Light Mode", this); }
-
-void LitterRobot4NightLightBrightnessSelect::setup() {
-  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
-    if (reg == REG_NIGHT_LIGHT_BRIGHTNESS) {
-      auto *opt = brightness_to_option(value);
-      if (opt != nullptr && this->has_option(opt)) {
-        auto idx = this->index_of(opt);
-        if (idx.has_value())
-          this->publish_state(*idx);
-      }
-    }
-  });
-}
-
-void LitterRobot4NightLightBrightnessSelect::control(size_t index) {
-  uint16_t value = option_to_brightness(this->option_at(index));
-  this->parent_->write_register(REG_NIGHT_LIGHT_BRIGHTNESS, value);
-}
-
-void LitterRobot4NightLightBrightnessSelect::dump_config() {
-  LOG_SELECT("", "Litter Robot 4 Night Light Brightness", this);
-}
-
-static uint16_t option_to_panel_brightness(const char *option) {
-  if (strcmp(option, "Low") == 0)
-    return (25 << 8) | 15;
-  if (strcmp(option, "Medium") == 0)
-    return (50 << 8) | 40;
-  return (100 << 8) | 90;
-}
-
-void LitterRobot4PanelBrightnessSelect::setup() {
-  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
-    if (reg == REG_PANEL_LED) {
-      auto *opt = brightness_to_option(value >> 8);
-      if (opt != nullptr && this->has_option(opt)) {
-        auto idx = this->index_of(opt);
-        if (idx.has_value())
-          this->publish_state(*idx);
-      }
-    }
-  });
-}
-
-void LitterRobot4PanelBrightnessSelect::control(size_t index) {
-  uint16_t value = option_to_panel_brightness(this->option_at(index));
-  this->parent_->write_register(REG_PANEL_LED, value);
-}
-
-void LitterRobot4PanelBrightnessSelect::dump_config() { LOG_SELECT("", "Litter Robot 4 Panel Brightness", this); }
-#endif
-
-#ifdef USE_SWITCH
-void LitterRobot4ControlPanelLockoutSwitch::setup() {
-  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
-    if (reg == REG_PANEL_LOCKOUT) {
-      this->publish_state(value != 0);
-    }
-  });
-}
-
-void LitterRobot4ControlPanelLockoutSwitch::write_state(bool state) {
-  this->parent_->write_register(REG_PANEL_LOCKOUT, state ? 1 : 0);
-}
-
-void LitterRobot4ControlPanelLockoutSwitch::dump_config() {
-  LOG_SWITCH("", "Litter Robot 4 Control Panel Lockout", this);
-}
-#endif
-
-#ifdef USE_BINARY_SENSOR
-void LitterRobot4WasteDrawerFullBinarySensor::setup() {
-  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
-    if (reg == REG_WASTE_DRAWER_FULL) {
-      this->publish_state(value != 0);
-    }
-  });
-}
-
-void LitterRobot4WasteDrawerFullBinarySensor::dump_config() {
-  LOG_BINARY_SENSOR("", "Litter Robot 4 Waste Drawer Full", this);
-}
-#endif
 
 }  // namespace esphome::litter_robot4
