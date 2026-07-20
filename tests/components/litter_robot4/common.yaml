@@ -56,7 +56,25 @@ select:
 
 switch:
   - platform: litter_robot4
+    type: control_panel_lockout
     name: "Control Panel Lockout"
+  - platform: litter_robot4
+    type: sleep_schedule_sun
+    name: "Sunday Sleep Schedule"
+  - platform: litter_robot4
+    type: sleep_schedule_mon
+    name: "Monday Sleep Schedule"
+
+datetime:
+  - platform: litter_robot4
+    type: sleep_sun
+    name: "Sunday Sleep Time"
+  - platform: litter_robot4
+    type: wake_sun
+    name: "Sunday Wake Time"
+  - platform: litter_robot4
+    type: sleep_mon
+    name: "Monday Sleep Time"
 
 binary_sensor:
   - platform: litter_robot4

@@ -21,4 +21,21 @@ void LitterRobot4ControlPanelLockoutSwitch::dump_config() {
   LOG_SWITCH("", "Litter Robot 4 Control Panel Lockout", this);
 }
 
+void LitterRobot4SleepDayEnabledSwitch::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_SLEEP_DAY_MASK) {
+      this->publish_state((value >> this->day_) & 1);
+    }
+  });
+}
+
+void LitterRobot4SleepDayEnabledSwitch::write_state(bool state) {
+  this->parent_->write_sleep_day_enabled(this->day_, state);
+}
+
+void LitterRobot4SleepDayEnabledSwitch::dump_config() {
+  LOG_SWITCH("", "Litter Robot 4 Sleep Schedule Day", this);
+  ESP_LOGCONFIG(TAG, "  Day: %u", this->day_);
+}
+
 }  // namespace esphome::litter_robot4
