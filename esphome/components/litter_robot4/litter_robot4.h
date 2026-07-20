@@ -3,6 +3,9 @@
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
+#ifdef USE_TIME
+#include "esphome/components/time/real_time_clock.h"
+#endif
 
 namespace esphome::litter_robot4 {
 
@@ -37,10 +40,19 @@ static const uint8_t FRAME_TERMINATOR = 0xFF;
 static const uint8_t MAX_PENDING = 64;
 static const uint32_t PENDING_TIMEOUT = 200;
 
+static const uint32_t SYNC_TIME_INTERVAL = 86400000;
+
 // Register addresses
 enum Register : uint8_t {
   REG_KEYPAD = 0x01,
   REG_CAT_WEIGHT = 0x09,
+  REG_TIME_DOW = 0x0F,
+  REG_TIME_HOUR = 0x10,
+  REG_TIME_MINUTE = 0x11,
+  REG_TIME_SECOND = 0x12,
+  REG_TIME_DAY = 0x13,
+  REG_TIME_MONTH = 0x14,
+  REG_TIME_YEAR = 0x15,
   REG_PANEL_LED = 0x0E,
   REG_CLEAN_CYCLE_DELAY = 0x16,
   REG_PANEL_LOCKOUT = 0x17,
@@ -132,6 +144,10 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
   void write_sleep_day_enabled(DayOfWeek day, bool enabled);
   void poll_registers();
 
+#ifdef USE_TIME
+  void set_time_id(time::RealTimeClock *time_id) { this->time_id_ = time_id; }
+#endif
+
   template<typename F> void add_on_register_update_callback(F &&callback) {
     this->on_register_update_callback_.add(std::forward<F>(callback));
   }
@@ -145,6 +161,7 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
   void handle_write_ack_(uint8_t reg, uint16_t value);
   void pop_queue_();
   void check_timeouts_();
+  void sync_time_();
 
   uint8_t rx_buf_[FRAME_LENGTH];
   uint8_t rx_count_{0};
@@ -156,6 +173,10 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
 
   uint16_t sleep_mask_{0};
   bool api_was_connected_{false};
+#ifdef USE_TIME
+  time::RealTimeClock *time_id_{nullptr};
+#endif
+  uint32_t last_time_sync_{0};
 };
 
 }  // namespace esphome::litter_robot4
