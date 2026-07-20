@@ -12,7 +12,11 @@ static const char *const TAG = "litter_robot4";
 static const Register POLL_REGISTERS[] = {
     REG_ROBOT_STATUS,      REG_FAULT_CODE,        REG_CLEAN_CYCLE_COUNT, REG_WASTE_DRAWER_PCT,
     REG_WASTE_DRAWER_FULL, REG_LITTER_LEVEL_RAW,  REG_NIGHT_LIGHT_MODE,  REG_NIGHT_LIGHT_BRIGHTNESS,
-    REG_PANEL_LED,         REG_CLEAN_CYCLE_DELAY, REG_PANEL_LOCKOUT};
+    REG_PANEL_LED,         REG_CLEAN_CYCLE_DELAY, REG_PANEL_LOCKOUT,     REG_SLEEP_DAY_MASK,
+    REG_SLEEP_SUN,         REG_WAKE_SUN,          REG_SLEEP_MON,         REG_WAKE_MON,
+    REG_SLEEP_TUE,         REG_WAKE_TUE,          REG_SLEEP_WED,         REG_WAKE_WED,
+    REG_SLEEP_THU,         REG_WAKE_THU,          REG_SLEEP_FRI,         REG_WAKE_FRI,
+    REG_SLEEP_SAT,         REG_WAKE_SAT};
 
 static const RegisterInfo REGISTER_NAMES[] = {
     {REG_KEYPAD, "Keypad"},
@@ -23,6 +27,21 @@ static const RegisterInfo REGISTER_NAMES[] = {
     {REG_FACTORY_RESET, "Factory Reset"},
     {REG_NIGHT_LIGHT_MODE, "Night Light Mode"},
     {REG_NIGHT_LIGHT_BRIGHTNESS, "Night Light Brightness"},
+    {REG_SLEEP_DAY_MASK, "Sleep Schedule Day Mask"},
+    {REG_SLEEP_SUN, "Sunday Sleep Time"},
+    {REG_WAKE_SUN, "Sunday Wake Time"},
+    {REG_SLEEP_MON, "Monday Sleep Time"},
+    {REG_WAKE_MON, "Monday Wake Time"},
+    {REG_SLEEP_TUE, "Tuesday Sleep Time"},
+    {REG_WAKE_TUE, "Tuesday Wake Time"},
+    {REG_SLEEP_WED, "Wednesday Sleep Time"},
+    {REG_WAKE_WED, "Wednesday Wake Time"},
+    {REG_SLEEP_THU, "Thursday Sleep Time"},
+    {REG_WAKE_THU, "Thursday Wake Time"},
+    {REG_SLEEP_FRI, "Friday Sleep Time"},
+    {REG_WAKE_FRI, "Friday Wake Time"},
+    {REG_SLEEP_SAT, "Saturday Sleep Time"},
+    {REG_WAKE_SAT, "Saturday Wake Time"},
     {REG_ROBOT_STATUS, "Robot Status"},
     {REG_FAULT_CODE, "Fault Code"},
     {REG_CLEAN_CYCLE_COUNT, "Clean Cycle Count"},
@@ -132,6 +151,16 @@ void LitterRobot4Component::write_register(uint8_t reg, uint16_t value) {
   }
 }
 
+// Sleep schedule bits are written optimistically to avoid a race condition if multiple switches are toggled quickly.
+void LitterRobot4Component::write_sleep_day_enabled(DayOfWeek day, bool enabled) {
+  if (enabled) {
+    this->sleep_mask_ |= (1 << static_cast<uint8_t>(day));
+  } else {
+    this->sleep_mask_ &= ~(1 << static_cast<uint8_t>(day));
+  }
+  this->write_register(REG_SLEEP_DAY_MASK, this->sleep_mask_);
+}
+
 void LitterRobot4Component::send_frame_(uint8_t operation, uint8_t reg, uint16_t value) {
   auto *name = register_name(reg);
   if (operation == OP_READ) {
@@ -212,6 +241,10 @@ void LitterRobot4Component::handle_event_(uint8_t reg, uint16_t value) {
     this->set_timeout(3000, [this]() { this->poll_registers(); });
   }
 
+  if (reg == REG_SLEEP_DAY_MASK) {
+    this->sleep_mask_ = value;
+  }
+
   auto *name = register_name(reg);
   if (name) {
     ESP_LOGD(TAG, "PIC write: %s = %u (0x%04X)", name, value, value);
@@ -253,6 +286,10 @@ void LitterRobot4Component::handle_read_reply_(uint8_t reg, uint16_t value) {
     ESP_LOGD(TAG, "PIC read reply: %s = %u (0x%04X)", n, value, value);
   } else {
     ESP_LOGD(TAG, "PIC read reply: reg=0x%02X value=%u (0x%04X)", reg, value, value);
+  }
+
+  if (reg == REG_SLEEP_DAY_MASK) {
+    this->sleep_mask_ = value;
   }
 
   this->on_register_update_callback_.call(reg, value);
