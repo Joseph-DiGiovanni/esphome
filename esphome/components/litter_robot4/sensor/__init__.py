@@ -2,6 +2,7 @@ import esphome.codegen as cg
 from esphome.components import sensor
 import esphome.config_validation as cv
 from esphome.const import (
+    CONF_TYPE,
     DEVICE_CLASS_WEIGHT,
     STATE_CLASS_MEASUREMENT,
     STATE_CLASS_TOTAL_INCREASING,
@@ -37,6 +38,18 @@ CleanCycleCountSensor = litter_robot4_ns.class_(
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
+OdometerSensor = litter_robot4_ns.class_(
+    "LitterRobot4OdometerSensor",
+    sensor.Sensor,
+    cg.Component,
+    cg.Parented.template(LitterRobot4Component),
+)
+
+_ODOMETER_REGISTERS = {
+    "power_cycle_count": "REG_POWER_CYCLE_COUNT",
+    "empty_cycle_count": "REG_EMPTY_CYCLE_COUNT",
+    "filter_cycle_count": "REG_FILTER_CYCLE_COUNT",
+}
 
 
 def _sensor_schema(
@@ -90,6 +103,24 @@ CONFIG_SCHEMA = cv.typed_schema(
             state_class=STATE_CLASS_TOTAL_INCREASING,
             icon="mdi:counter",
         ),
+        "power_cycle_count": _sensor_schema(
+            OdometerSensor,
+            acc_decimals=0,
+            state_class=STATE_CLASS_TOTAL_INCREASING,
+            icon="mdi:power-cycle",
+        ),
+        "empty_cycle_count": _sensor_schema(
+            OdometerSensor,
+            acc_decimals=0,
+            state_class=STATE_CLASS_TOTAL_INCREASING,
+            icon="mdi:delete-outline",
+        ),
+        "filter_cycle_count": _sensor_schema(
+            OdometerSensor,
+            acc_decimals=0,
+            state_class=STATE_CLASS_TOTAL_INCREASING,
+            icon="mdi:air-filter",
+        ),
     }
 )
 
@@ -99,3 +130,7 @@ async def to_code(config):
     var = await sensor.new_sensor(config)
     await cg.register_component(var, config)
     await cg.register_parented(var, parent)
+    if config[CONF_TYPE] in _ODOMETER_REGISTERS:
+        cg.add(
+            var.set_register(cg.RawExpression(_ODOMETER_REGISTERS[config[CONF_TYPE]]))
+        )

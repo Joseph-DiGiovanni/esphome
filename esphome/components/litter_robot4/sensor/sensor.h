@@ -32,4 +32,14 @@ class LitterRobot4CleanCycleCountSensor : public sensor::Sensor,
   void dump_config() override;
 };
 
+class LitterRobot4OdometerSensor : public sensor::Sensor, public Component, public Parented<LitterRobot4Component> {
+ public:
+  void setup() override;
+  void dump_config() override;
+  void set_register(Register reg) { this->register_ = reg; }
+
+ protected:
+  Register register_{};
+};
+
 }  // namespace esphome::litter_robot4

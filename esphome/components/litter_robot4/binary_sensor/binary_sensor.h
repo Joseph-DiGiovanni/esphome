@@ -14,4 +14,36 @@ class LitterRobot4WasteDrawerFullBinarySensor : public binary_sensor::BinarySens
   void dump_config() override;
 };
 
+class LitterRobot4BonnetRemovedBinarySensor : public binary_sensor::BinarySensor,
+                                              public Component,
+                                              public Parented<LitterRobot4Component> {
+ public:
+  void setup() override;
+  void dump_config() override;
+};
+
+class LitterRobot4NightLightBinarySensor : public binary_sensor::BinarySensor,
+                                           public Component,
+                                           public Parented<LitterRobot4Component> {
+ public:
+  void setup() override;
+  void dump_config() override;
+};
+
+class LitterRobot4SleepStatusBinarySensor : public binary_sensor::BinarySensor,
+                                            public Component,
+                                            public Parented<LitterRobot4Component> {
+ public:
+  void setup() override;
+  void dump_config() override;
+};
+
+class LitterRobot4FaultStatusBinarySensor : public binary_sensor::BinarySensor,
+                                            public Component,
+                                            public Parented<LitterRobot4Component> {
+ public:
+  void setup() override;
+  void dump_config() override;
+};
+
 }  // namespace esphome::litter_robot4

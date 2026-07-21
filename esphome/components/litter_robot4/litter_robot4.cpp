@@ -9,17 +9,21 @@ namespace esphome::litter_robot4 {
 
 static const char *const TAG = "litter_robot4";
 
-static const Register POLL_REGISTERS[] = {
-    REG_ROBOT_STATUS,      REG_FAULT_CODE,        REG_CLEAN_CYCLE_COUNT, REG_WASTE_DRAWER_PCT,
-    REG_WASTE_DRAWER_FULL, REG_LITTER_LEVEL_RAW,  REG_NIGHT_LIGHT_MODE,  REG_NIGHT_LIGHT_BRIGHTNESS,
-    REG_PANEL_LED,         REG_CLEAN_CYCLE_DELAY, REG_PANEL_LOCKOUT,     REG_SLEEP_DAY_MASK,
-    REG_SLEEP_SUN,         REG_WAKE_SUN,          REG_SLEEP_MON,         REG_WAKE_MON,
-    REG_SLEEP_TUE,         REG_WAKE_TUE,          REG_SLEEP_WED,         REG_WAKE_WED,
-    REG_SLEEP_THU,         REG_WAKE_THU,          REG_SLEEP_FRI,         REG_WAKE_FRI,
-    REG_SLEEP_SAT,         REG_WAKE_SAT};
+static const Register POLL_REGISTERS[] = {REG_POWER_TYPE,        REG_PANEL_LED,         REG_CLEAN_CYCLE_DELAY,
+                                          REG_PANEL_LOCKOUT,     REG_NIGHT_LIGHT_MODE,  REG_NIGHT_LIGHT_BRIGHTNESS,
+                                          REG_SLEEP_DAY_MASK,    REG_SLEEP_SUN,         REG_WAKE_SUN,
+                                          REG_SLEEP_MON,         REG_WAKE_MON,          REG_SLEEP_TUE,
+                                          REG_WAKE_TUE,          REG_SLEEP_WED,         REG_WAKE_WED,
+                                          REG_SLEEP_THU,         REG_WAKE_THU,          REG_SLEEP_FRI,
+                                          REG_WAKE_FRI,          REG_SLEEP_SAT,         REG_WAKE_SAT,
+                                          REG_ROBOT_STATUS,      REG_FAULT_CODE,        REG_SLEEP_STATUS,
+                                          REG_BONNET_REMOVED,    REG_NIGHT_LIGHT,       REG_POWER_CYCLE_COUNT,
+                                          REG_CLEAN_CYCLE_COUNT, REG_EMPTY_CYCLE_COUNT, REG_FILTER_CYCLE_COUNT,
+                                          REG_WASTE_DRAWER_PCT,  REG_WASTE_DRAWER_FULL, REG_LITTER_LEVEL_RAW};
 
 static const RegisterInfo REGISTER_NAMES[] = {
     {REG_KEYPAD, "Keypad"},
+    {REG_POWER_TYPE, "Power Type"},
     {REG_CAT_WEIGHT, "Cat Weight"},
     {REG_TIME_DOW, "Time Day of Week"},
     {REG_TIME_HOUR, "Time Hour"},
@@ -51,7 +55,13 @@ static const RegisterInfo REGISTER_NAMES[] = {
     {REG_WAKE_SAT, "Saturday Wake Time"},
     {REG_ROBOT_STATUS, "Robot Status"},
     {REG_FAULT_CODE, "Fault Code"},
+    {REG_SLEEP_STATUS, "Sleep Status"},
+    {REG_BONNET_REMOVED, "Bonnet Removed"},
+    {REG_NIGHT_LIGHT, "Night Light"},
+    {REG_POWER_CYCLE_COUNT, "Power Cycle Count"},
     {REG_CLEAN_CYCLE_COUNT, "Clean Cycle Count"},
+    {REG_EMPTY_CYCLE_COUNT, "Empty Cycle Count"},
+    {REG_FILTER_CYCLE_COUNT, "Filter Cycle Count"},
     {REG_WASTE_DRAWER_PCT, "Waste Drawer Percent"},
     {REG_WASTE_DRAWER_FULL, "Waste Drawer Full"},
     {REG_LITTER_LEVEL_RAW, "Litter Level Raw Distance"},

@@ -3,7 +3,11 @@ litter_robot4:
 
 text_sensor:
   - platform: litter_robot4
+    type: status
     name: "Status"
+  - platform: litter_robot4
+    type: power_type
+    name: "Power Type"
 
 sensor:
   - platform: litter_robot4
@@ -18,6 +22,15 @@ sensor:
   - platform: litter_robot4
     type: clean_cycle_count
     name: "Clean Cycles"
+  - platform: litter_robot4
+    type: power_cycle_count
+    name: "Power Cycles"
+  - platform: litter_robot4
+    type: empty_cycle_count
+    name: "Empty Cycles"
+  - platform: litter_robot4
+    type: filter_cycle_count
+    name: "Filter Cycles"
 
 button:
   - platform: litter_robot4
@@ -78,4 +91,17 @@ datetime:
 
 binary_sensor:
   - platform: litter_robot4
+    type: waste_drawer_full
     name: "Waste Drawer Full"
+  - platform: litter_robot4
+    type: bonnet_removed
+    name: "Bonnet Removed"
+  - platform: litter_robot4
+    type: night_light
+    name: "Night Light"
+  - platform: litter_robot4
+    type: sleep_status
+    name: "Sleep Status"
+  - platform: litter_robot4
+    type: fault_status
+    name: "Fault Status"
