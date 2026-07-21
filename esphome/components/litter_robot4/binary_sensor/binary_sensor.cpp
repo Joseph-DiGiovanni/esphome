@@ -17,4 +17,46 @@ void LitterRobot4WasteDrawerFullBinarySensor::dump_config() {
   LOG_BINARY_SENSOR("", "Litter Robot 4 Waste Drawer Full", this);
 }
 
+void LitterRobot4BonnetRemovedBinarySensor::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_BONNET_REMOVED) {
+      this->publish_state(value != 0);
+    }
+  });
+}
+
+void LitterRobot4BonnetRemovedBinarySensor::dump_config() {
+  LOG_BINARY_SENSOR("", "Litter Robot 4 Bonnet Removed", this);
+}
+
+void LitterRobot4NightLightBinarySensor::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_NIGHT_LIGHT) {
+      this->publish_state(value != 0);
+    }
+  });
+}
+
+void LitterRobot4NightLightBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Night Light", this); }
+
+void LitterRobot4SleepStatusBinarySensor::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_SLEEP_STATUS) {
+      this->publish_state(value != 0);
+    }
+  });
+}
+
+void LitterRobot4SleepStatusBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Sleep Status", this); }
+
+void LitterRobot4FaultStatusBinarySensor::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_FAULT_CODE) {
+      this->publish_state(value != 0);
+    }
+  });
+}
+
+void LitterRobot4FaultStatusBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Fault Status", this); }
+
 }  // namespace esphome::litter_robot4

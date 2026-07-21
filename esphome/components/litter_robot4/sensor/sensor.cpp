@@ -53,4 +53,19 @@ void LitterRobot4CleanCycleCountSensor::setup() {
 
 void LitterRobot4CleanCycleCountSensor::dump_config() { LOG_SENSOR("", "Litter Robot 4 Clean Cycle Count", this); }
 
+void LitterRobot4OdometerSensor::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == this->register_) {
+      this->publish_state(value);
+    }
+  });
+}
+
+void LitterRobot4OdometerSensor::dump_config() {
+  auto *name = register_name(this->register_);
+  if (name) {
+    LOG_SENSOR("", name, this);
+  }
+}
+
 }  // namespace esphome::litter_robot4

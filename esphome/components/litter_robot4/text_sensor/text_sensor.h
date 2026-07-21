@@ -17,7 +17,16 @@ class LitterRobot4StatusTextSensor : public text_sensor::TextSensor,
   uint16_t robot_status_{0};
   uint16_t fault_code_{0};
   bool waste_drawer_full_{false};
+  bool on_battery_{false};
   void update_display_();
+};
+
+class LitterRobot4PowerTypeTextSensor : public text_sensor::TextSensor,
+                                        public Component,
+                                        public Parented<LitterRobot4Component> {
+ public:
+  void setup() override;
+  void dump_config() override;
 };
 
 }  // namespace esphome::litter_robot4
