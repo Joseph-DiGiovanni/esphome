@@ -81,7 +81,7 @@ static const StatusInfo STATUS_NAMES[] = {
     {STATUS_CALIBRATING, "Calibration in progress"},
 };
 
-const char *register_name(uint8_t reg) {
+const char *register_name(Register reg) {
   for (const auto &info : REGISTER_NAMES) {
     if (info.reg == reg)
       return info.name;
@@ -129,7 +129,7 @@ void LitterRobot4Component::dump_config() {
 #endif
 }
 
-void LitterRobot4Component::read_register(uint8_t reg) {
+void LitterRobot4Component::read_register(Register reg) {
   if (this->op_count_ >= MAX_PENDING) {
     auto *name = register_name(reg);
     if (name) {
@@ -152,7 +152,7 @@ void LitterRobot4Component::read_register(uint8_t reg) {
   }
 }
 
-void LitterRobot4Component::write_register(uint8_t reg, uint16_t value) {
+void LitterRobot4Component::write_register(Register reg, uint16_t value) {
   if (this->op_count_ >= MAX_PENDING) {
     auto *name = register_name(reg);
     if (name) {
@@ -186,15 +186,15 @@ void LitterRobot4Component::write_sleep_day_enabled(DayOfWeek day, bool enabled)
   this->write_register(REG_SLEEP_DAY_MASK, this->sleep_mask_);
 }
 
-void LitterRobot4Component::send_frame_(uint8_t operation, uint8_t reg, uint16_t value) {
+void LitterRobot4Component::send_frame_(Operation op, Register reg, uint16_t value) {
   auto *name = register_name(reg);
-  if (operation == OP_READ) {
+  if (op == OP_READ) {
     if (name) {
       ESP_LOGD(TAG, "ESP read: %s (0x%02X)", name, reg);
     } else {
       ESP_LOGD(TAG, "ESP read: reg=0x%02X", reg);
     }
-  } else if (operation == OP_WRITE) {
+  } else if (op == OP_WRITE) {
     if (name) {
       ESP_LOGD(TAG, "ESP write: %s = %u (0x%04X)", name, value, value);
     } else {
@@ -203,11 +203,17 @@ void LitterRobot4Component::send_frame_(uint8_t operation, uint8_t reg, uint16_t
   }
   uint8_t value_high = static_cast<uint8_t>(value >> 8);
   uint8_t value_low = static_cast<uint8_t>(value & 0xFF);
-  uint8_t checksum = (DIR_ESP_TO_PIC + operation + reg + value_high + value_low) & 0xFF;
+  uint8_t checksum = (static_cast<uint8_t>(DIR_ESP_TO_PIC) + static_cast<uint8_t>(op) + static_cast<uint8_t>(reg) +
+                      value_high + value_low) &
+                     0xFF;
 
-  uint8_t frame[FRAME_LENGTH] = {
-      DIR_ESP_TO_PIC, operation, reg, value_high, value_low, checksum, FRAME_TERMINATOR,
-  };
+  uint8_t frame[FRAME_LENGTH] = {static_cast<uint8_t>(DIR_ESP_TO_PIC),
+                                 static_cast<uint8_t>(op),
+                                 static_cast<uint8_t>(reg),
+                                 value_high,
+                                 value_low,
+                                 checksum,
+                                 FRAME_TERMINATOR};
 
   this->write_array(frame, FRAME_LENGTH);
 }
@@ -226,7 +232,8 @@ void LitterRobot4Component::parse_byte_(uint8_t byte) {
       uint8_t sum = dir + op + this->rx_buf_[2] + this->rx_buf_[3] + this->rx_buf_[4];
       if (sum == this->rx_buf_[5]) {
         uint16_t value = (static_cast<uint16_t>(this->rx_buf_[3]) << 8) | this->rx_buf_[4];
-        this->handle_frame_(dir, op, this->rx_buf_[2], value);
+        this->handle_frame_(static_cast<Direction>(dir), static_cast<Operation>(op),
+                            static_cast<Register>(this->rx_buf_[2]), value);
         this->rx_count_ = 0;
         return;
       }
@@ -239,13 +246,13 @@ void LitterRobot4Component::parse_byte_(uint8_t byte) {
   this->rx_count_ = FRAME_LENGTH - 1;
 }
 
-void LitterRobot4Component::handle_frame_(uint8_t direction, uint8_t operation, uint8_t reg, uint16_t value) {
-  if (direction != DIR_PIC_TO_ESP) {
-    ESP_LOGD(TAG, "Unexpected direction 0x%02X", direction);
+void LitterRobot4Component::handle_frame_(Direction dir, Operation op, Register reg, uint16_t value) {
+  if (dir != DIR_PIC_TO_ESP) {
+    ESP_LOGD(TAG, "Unexpected direction 0x%02X", dir);
     return;
   }
 
-  switch (operation) {
+  switch (op) {
     case OP_WRITE:
       this->handle_event_(reg, value);
       break;
@@ -256,12 +263,12 @@ void LitterRobot4Component::handle_frame_(uint8_t direction, uint8_t operation, 
       this->handle_write_ack_(reg, value);
       break;
     default:
-      ESP_LOGD(TAG, "Unknown operation 0x%02X", operation);
+      ESP_LOGD(TAG, "Unknown operation 0x%02X", op);
       break;
   }
 }
 
-void LitterRobot4Component::handle_event_(uint8_t reg, uint16_t value) {
+void LitterRobot4Component::handle_event_(Register reg, uint16_t value) {
   if (reg == REG_FACTORY_RESET && value == CMD_FACTORY_RESET) {
     this->set_timeout(3000, [this]() {
       this->poll_registers();
@@ -283,7 +290,7 @@ void LitterRobot4Component::handle_event_(uint8_t reg, uint16_t value) {
   this->on_register_update_callback_.call(reg, value);
 }
 
-void LitterRobot4Component::handle_read_reply_(uint8_t reg, uint16_t value) {
+void LitterRobot4Component::handle_read_reply_(Register reg, uint16_t value) {
   if (this->op_count_ == 0) {
     auto *name = register_name(reg);
     if (name) {
@@ -292,6 +299,10 @@ void LitterRobot4Component::handle_read_reply_(uint8_t reg, uint16_t value) {
       ESP_LOGD(TAG, "Unexpected read reply for register 0x%02X", reg);
     }
     return;
+  }
+
+  if (reg == REG_SLEEP_DAY_MASK) {
+    this->sleep_mask_ = value;
   }
 
   auto &op = this->op_queue_[this->op_head_];
@@ -324,7 +335,7 @@ void LitterRobot4Component::handle_read_reply_(uint8_t reg, uint16_t value) {
   this->pop_queue_();
 }
 
-void LitterRobot4Component::handle_write_ack_(uint8_t reg, uint16_t value) {
+void LitterRobot4Component::handle_write_ack_(Register reg, uint16_t value) {
   if (this->op_count_ == 0) {
     auto *name = register_name(reg);
     if (name) {
