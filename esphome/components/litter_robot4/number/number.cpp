@@ -6,7 +6,7 @@ namespace esphome::litter_robot4 {
 static const char *const TAG = "litter_robot4.number";
 
 void LitterRobot4CycleDelayNumber::setup() {
-  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_CLEAN_CYCLE_DELAY) {
       this->publish_state(value);
     }

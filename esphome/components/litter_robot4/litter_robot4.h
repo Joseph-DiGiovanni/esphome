@@ -130,12 +130,12 @@ struct StatusInfo {
   const char *name;
 };
 
-const char *register_name(uint8_t reg);
+const char *register_name(Register reg);
 const char *status_name(uint16_t status);
 
 struct PendingOperation {
   bool is_write{false};
-  uint8_t reg{0};
+  Register reg{};
   uint16_t value{0};
   uint32_t timestamp{0};
 };
@@ -146,8 +146,8 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
   void loop() override;
   void dump_config() override;
 
-  void read_register(uint8_t reg);
-  void write_register(uint8_t reg, uint16_t value);
+  void read_register(Register reg);
+  void write_register(Register reg, uint16_t value);
   void write_sleep_day_enabled(DayOfWeek day, bool enabled);
   void poll_registers();
 
@@ -160,12 +160,12 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
   }
 
  protected:
-  void send_frame_(uint8_t operation, uint8_t reg, uint16_t value);
+  void send_frame_(Operation op, Register reg, uint16_t value);
   void parse_byte_(uint8_t byte);
-  void handle_frame_(uint8_t direction, uint8_t operation, uint8_t reg, uint16_t value);
-  void handle_event_(uint8_t reg, uint16_t value);
-  void handle_read_reply_(uint8_t reg, uint16_t value);
-  void handle_write_ack_(uint8_t reg, uint16_t value);
+  void handle_frame_(Direction dir, Operation op, Register reg, uint16_t value);
+  void handle_event_(Register reg, uint16_t value);
+  void handle_read_reply_(Register reg, uint16_t value);
+  void handle_write_ack_(Register reg, uint16_t value);
   void pop_queue_();
   void check_timeouts_();
   void sync_time_();
@@ -176,7 +176,7 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
   PendingOperation op_queue_[MAX_PENDING];
   uint8_t op_head_{0}, op_tail_{0}, op_count_{0};
 
-  LazyCallbackManager<void(uint8_t, uint16_t)> on_register_update_callback_;
+  LazyCallbackManager<void(Register, uint16_t)> on_register_update_callback_;
 
   uint16_t sleep_mask_{0};
   bool api_was_connected_{false};
