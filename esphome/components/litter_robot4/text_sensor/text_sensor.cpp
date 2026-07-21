@@ -17,6 +17,9 @@ void LitterRobot4StatusTextSensor::setup() {
       case REG_WASTE_DRAWER_FULL:
         this->waste_drawer_full_ = value != 0;
         break;
+      case REG_POWER_TYPE:
+        this->on_battery_ = value != 0;
+        break;
       default:
         return;
     }
@@ -25,6 +28,10 @@ void LitterRobot4StatusTextSensor::setup() {
 }
 
 void LitterRobot4StatusTextSensor::update_display_() {
+  if (this->on_battery_) {
+    this->publish_state("On battery");
+    return;
+  }
   if (this->fault_code_ != 0) {
     this->publish_state("Fault detected");
     return;
@@ -40,5 +47,15 @@ void LitterRobot4StatusTextSensor::update_display_() {
 }
 
 void LitterRobot4StatusTextSensor::dump_config() { LOG_TEXT_SENSOR("", "Litter Robot 4 Status", this); }
+
+void LitterRobot4PowerTypeTextSensor::setup() {
+  this->parent_->add_on_register_update_callback([this](uint8_t reg, uint16_t value) {
+    if (reg == REG_POWER_TYPE) {
+      this->publish_state(value == 0 ? "AC" : "Battery");
+    }
+  });
+}
+
+void LitterRobot4PowerTypeTextSensor::dump_config() { LOG_TEXT_SENSOR("", "Litter Robot 4 Power Type", this); }
 
 }  // namespace esphome::litter_robot4
