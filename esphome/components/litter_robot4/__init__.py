@@ -1,5 +1,5 @@
 import esphome.codegen as cg
-from esphome.components import time, uart
+from esphome.components import time, uart, wifi
 import esphome.config_validation as cv
 from esphome.const import CONF_ID, CONF_TIME_ID
 
@@ -43,3 +43,4 @@ async def to_code(config):
     if (time_id := config.get(CONF_TIME_ID)) is not None:
         time_ = await cg.get_variable(time_id)
         cg.add(var.set_time_id(time_))
+    wifi.request_wifi_connect_state_listener()
