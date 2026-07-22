@@ -36,6 +36,7 @@ static const RegisterInfo REGISTER_NAMES[] = {
     {REG_CLEAN_CYCLE_DELAY, "Clean Cycle Delay"},
     {REG_PANEL_LOCKOUT, "Control Panel Lockout"},
     {REG_FACTORY_RESET, "Factory Reset"},
+    {REG_WIFI_STATUS, "WiFi Status"},
     {REG_NIGHT_LIGHT_MODE, "Night Light Mode"},
     {REG_NIGHT_LIGHT_BRIGHTNESS, "Night Light Brightness"},
     {REG_SLEEP_DAY_MASK, "Sleep Schedule Day Mask"},
@@ -97,7 +98,36 @@ const char *status_name(uint16_t status) {
   return nullptr;
 }
 
-void LitterRobot4Component::setup() {}
+void LitterRobot4Component::setup() {
+#ifdef USE_WIFI
+  this->add_on_register_update_callback([this](Register reg, uint16_t value) {
+    if (wifi::global_wifi_component == nullptr) {
+      return;
+    }
+    if (reg == REG_WIFI_STATUS) {
+      bool wifi_disabled = wifi::global_wifi_component->is_disabled();
+      if (value == WIFI_OFF) {
+        if (!wifi_disabled) {
+          this->set_timeout("wifi_disable", 500, [this] { wifi::global_wifi_component->disable(); });
+        }
+      } else {
+        if (wifi_disabled) {
+          wifi::global_wifi_component->enable();
+        }
+        if (!wifi_disabled) {
+          this->sync_wifi_status_();
+        }
+      }
+    }
+  });
+#endif
+
+#ifdef USE_WIFI_CONNECT_STATE_LISTENERS
+  if (wifi::global_wifi_component != nullptr) {
+    wifi::global_wifi_component->add_connect_state_listener(this);
+  }
+#endif
+}
 
 void LitterRobot4Component::loop() {
   while (this->available()) {
@@ -110,6 +140,9 @@ void LitterRobot4Component::loop() {
   if (connected && !this->api_was_connected_) {
     this->poll_registers();
     this->sync_time_();
+#ifdef USE_WIFI
+    this->sync_wifi_status_();
+#endif
   }
   this->api_was_connected_ = connected;
 #endif
@@ -117,6 +150,11 @@ void LitterRobot4Component::loop() {
 #ifdef USE_TIME
   if (this->time_id_ != nullptr && millis() - this->last_time_sync_ > SYNC_TIME_INTERVAL) {
     this->sync_time_();
+  }
+#endif
+#ifdef USE_WIFI
+  if (wifi::global_wifi_component != nullptr) {
+    this->sync_wifi_status_();
   }
 #endif
 }
@@ -437,5 +475,33 @@ void LitterRobot4Component::sync_time_() {
            now.minute, now.second, now.day_of_week - 1);
 #endif
 }
+
+#ifdef USE_WIFI
+void LitterRobot4Component::sync_wifi_status_() {
+  if (wifi::global_wifi_component == nullptr)
+    return;
+
+  WifiStatus status = WIFI_CONNECTING;
+  if (wifi::global_wifi_component->is_disabled()) {
+    status = WIFI_OFF;
+  } else if (wifi::global_wifi_component->is_ap_active()) {
+    status = WIFI_PAIRING;
+  } else if (wifi::global_wifi_component->is_connected()) {
+    status = WIFI_CONNECTED;
+  }
+
+  if (status == this->last_wifi_status_)
+    return;
+
+  this->last_wifi_status_ = status;
+  this->write_register(REG_WIFI_STATUS, status);
+}
+#endif
+
+#ifdef USE_WIFI_CONNECT_STATE_LISTENERS
+void LitterRobot4Component::on_wifi_connect_state(StringRef ssid, std::span<const uint8_t, 6> bssid) {
+  this->sync_wifi_status_();
+}
+#endif
 
 }  // namespace esphome::litter_robot4
