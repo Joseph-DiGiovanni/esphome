@@ -6,6 +6,9 @@
 #ifdef USE_TIME
 #include "esphome/components/time/real_time_clock.h"
 #endif
+#ifdef USE_WIFI
+#include "esphome/components/wifi/wifi_component.h"
+#endif
 
 namespace esphome::litter_robot4 {
 
@@ -75,6 +78,7 @@ enum Register : uint8_t {
   REG_SLEEP_SAT = 0x2A,
   REG_WAKE_SAT = 0x2B,
   REG_FACTORY_RESET = 0x2D,
+  REG_WIFI_STATUS = 0x33,
   REG_ROBOT_STATUS = 0x34,
   REG_FAULT_CODE = 0x35,
   REG_SLEEP_STATUS = 0x32,
@@ -116,6 +120,15 @@ enum DayOfWeek : uint8_t {
   DAY_SAT,
 };
 
+// WiFi status values written to/read from PIC register 0x33
+enum WifiStatus : uint16_t {
+  WIFI_OFF = 0x00,
+  WIFI_PAIRING = 0x11,
+  WIFI_CONNECTING = 0x21,
+  WIFI_CONNECTED = 0x22,
+  WIFI_ERROR = 0x23,
+};
+
 // Litter level distance mapping
 static const float LITTER_EMPTY_RAW_DIST = 490.0f;
 static const float LITTER_FULL_RAW_DIST = 440.0f;
@@ -140,7 +153,13 @@ struct PendingOperation {
   uint32_t timestamp{0};
 };
 
-class LitterRobot4Component final : public uart::UARTDevice, public Component {
+class LitterRobot4Component final : public uart::UARTDevice,
+                                    public Component
+#ifdef USE_WIFI_CONNECT_STATE_LISTENERS
+    ,
+                                    public wifi::WiFiConnectStateListener
+#endif
+{
  public:
   void setup() override;
   void loop() override;
@@ -169,6 +188,12 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
   void pop_queue_();
   void check_timeouts_();
   void sync_time_();
+#ifdef USE_WIFI
+  void sync_wifi_status_();
+#endif
+#ifdef USE_WIFI_CONNECT_STATE_LISTENERS
+  void on_wifi_connect_state(StringRef ssid, std::span<const uint8_t, 6> bssid) override;
+#endif
 
   uint8_t rx_buf_[FRAME_LENGTH];
   uint8_t rx_count_{0};
@@ -180,6 +205,9 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
 
   uint16_t sleep_mask_{0};
   bool api_was_connected_{false};
+#ifdef USE_WIFI
+  WifiStatus last_wifi_status_{WifiStatus{0xFF}};
+#endif
 #ifdef USE_TIME
   time::RealTimeClock *time_id_{nullptr};
 #endif
