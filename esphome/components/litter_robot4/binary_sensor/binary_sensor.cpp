@@ -6,7 +6,7 @@ namespace esphome::litter_robot4 {
 static const char *const TAG = "litter_robot4.binary_sensor";
 
 void LitterRobot4WasteDrawerFullBinarySensor::setup() {
-  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_WASTE_DRAWER_FULL) {
       this->publish_state(value != 0);
     }
@@ -18,7 +18,7 @@ void LitterRobot4WasteDrawerFullBinarySensor::dump_config() {
 }
 
 void LitterRobot4BonnetRemovedBinarySensor::setup() {
-  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_BONNET_REMOVED) {
       this->publish_state(value != 0);
     }
@@ -30,7 +30,7 @@ void LitterRobot4BonnetRemovedBinarySensor::dump_config() {
 }
 
 void LitterRobot4NightLightBinarySensor::setup() {
-  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_NIGHT_LIGHT) {
       this->publish_state(value != 0);
     }
@@ -40,7 +40,7 @@ void LitterRobot4NightLightBinarySensor::setup() {
 void LitterRobot4NightLightBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Night Light", this); }
 
 void LitterRobot4SleepStatusBinarySensor::setup() {
-  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_SLEEP_STATUS) {
       this->publish_state(value != 0);
     }
@@ -50,7 +50,7 @@ void LitterRobot4SleepStatusBinarySensor::setup() {
 void LitterRobot4SleepStatusBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Sleep Status", this); }
 
 void LitterRobot4FaultStatusBinarySensor::setup() {
-  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_FAULT_CODE) {
       this->publish_state(value != 0);
     }

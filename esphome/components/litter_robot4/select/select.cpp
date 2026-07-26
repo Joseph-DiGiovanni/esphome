@@ -54,7 +54,7 @@ static uint16_t option_to_panel_brightness(const char *option) {
 }
 
 void LitterRobot4NightLightModeSelect::setup() {
-  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_NIGHT_LIGHT_MODE) {
       auto *opt = night_light_mode_to_option(value);
       if (opt != nullptr && this->has_option(opt)) {
@@ -68,13 +68,13 @@ void LitterRobot4NightLightModeSelect::setup() {
 
 void LitterRobot4NightLightModeSelect::control(size_t index) {
   uint16_t value = option_to_mode(this->option_at(index));
-  this->parent_->write_register(REG_NIGHT_LIGHT_MODE, value);
+  this->parent_->queue_register_write(REG_NIGHT_LIGHT_MODE, value);
 }
 
 void LitterRobot4NightLightModeSelect::dump_config() { LOG_SELECT("", "Litter Robot 4 Night Light Mode", this); }
 
 void LitterRobot4NightLightBrightnessSelect::setup() {
-  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_NIGHT_LIGHT_BRIGHTNESS) {
       auto *opt = brightness_to_option(value);
       if (opt != nullptr && this->has_option(opt)) {
@@ -88,7 +88,7 @@ void LitterRobot4NightLightBrightnessSelect::setup() {
 
 void LitterRobot4NightLightBrightnessSelect::control(size_t index) {
   uint16_t value = option_to_brightness(this->option_at(index));
-  this->parent_->write_register(REG_NIGHT_LIGHT_BRIGHTNESS, value);
+  this->parent_->queue_register_write(REG_NIGHT_LIGHT_BRIGHTNESS, value);
 }
 
 void LitterRobot4NightLightBrightnessSelect::dump_config() {
@@ -96,7 +96,7 @@ void LitterRobot4NightLightBrightnessSelect::dump_config() {
 }
 
 void LitterRobot4PanelBrightnessSelect::setup() {
-  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_PANEL_LED) {
       auto *opt = brightness_to_option(value >> 8);
       if (opt != nullptr && this->has_option(opt)) {
@@ -110,7 +110,7 @@ void LitterRobot4PanelBrightnessSelect::setup() {
 
 void LitterRobot4PanelBrightnessSelect::control(size_t index) {
   uint16_t value = option_to_panel_brightness(this->option_at(index));
-  this->parent_->write_register(REG_PANEL_LED, value);
+  this->parent_->queue_register_write(REG_PANEL_LED, value);
 }
 
 void LitterRobot4PanelBrightnessSelect::dump_config() { LOG_SELECT("", "Litter Robot 4 Panel Brightness", this); }

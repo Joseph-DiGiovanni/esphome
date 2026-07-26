@@ -6,7 +6,7 @@ namespace esphome::litter_robot4 {
 static const char *const TAG = "litter_robot4.datetime";
 
 void LitterRobot4Time::setup() {
-  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == this->register_) {
       this->hour_ = value / 60;
       this->minute_ = value % 60;
@@ -20,7 +20,7 @@ void LitterRobot4Time::control(const datetime::TimeCall &call) {
   this->minute_ = call.get_minute().value_or(this->minute_);
   this->publish_state();
   uint16_t minutes = this->hour_ * 60 + this->minute_;
-  this->parent_->write_register(this->register_, minutes);
+  this->parent_->queue_register_write(this->register_, minutes);
 }
 
 void LitterRobot4Time::dump_config() { LOG_DATETIME_TIME("", "Litter Robot 4 Schedule Time", this); }
