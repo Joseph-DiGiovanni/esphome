@@ -35,8 +35,6 @@ static const RegisterInfo REGISTER_NAMES[] = {
     {REG_PANEL_LED, "Panel LED"},
     {REG_CLEAN_CYCLE_DELAY, "Clean Cycle Delay"},
     {REG_PANEL_LOCKOUT, "Control Panel Lockout"},
-    {REG_FACTORY_RESET, "Factory Reset"},
-    {REG_WIFI_STATUS, "WiFi Status"},
     {REG_NIGHT_LIGHT_MODE, "Night Light Mode"},
     {REG_NIGHT_LIGHT_BRIGHTNESS, "Night Light Brightness"},
     {REG_SLEEP_DAY_MASK, "Sleep Schedule Day Mask"},
@@ -54,6 +52,9 @@ static const RegisterInfo REGISTER_NAMES[] = {
     {REG_WAKE_FRI, "Friday Wake Time"},
     {REG_SLEEP_SAT, "Saturday Sleep Time"},
     {REG_WAKE_SAT, "Saturday Wake Time"},
+    {REG_FACTORY_RESET, "Factory Reset"},
+    {REG_HEARTBEAT, "Heartbeat"},
+    {REG_WIFI_STATUS, "WiFi Status"},
     {REG_ROBOT_STATUS, "Robot Status"},
     {REG_FAULT_CODE, "Fault Code"},
     {REG_SLEEP_STATUS, "Sleep Status"},
@@ -100,7 +101,7 @@ const char *status_name(uint16_t status) {
 
 void LitterRobot4Component::setup() {
 #ifdef USE_WIFI
-  this->add_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (wifi::global_wifi_component == nullptr) {
       return;
     }
@@ -120,12 +121,12 @@ void LitterRobot4Component::setup() {
       }
     }
   });
-#endif
 
 #ifdef USE_WIFI_CONNECT_STATE_LISTENERS
   if (wifi::global_wifi_component != nullptr) {
     wifi::global_wifi_component->add_connect_state_listener(this);
   }
+#endif
 #endif
 }
 
@@ -133,25 +134,26 @@ void LitterRobot4Component::loop() {
   while (this->available()) {
     this->parse_byte_(this->read());
   }
+
   this->check_timeouts_();
+
 #ifdef USE_API
   // Poll registers and sync time when API connects so the frontend immediately gets fresh state after a reconnect.
   bool connected = api::global_api_server->is_connected();
   if (connected && !this->api_was_connected_) {
-    this->poll_registers();
+    this->poll_registers_();
+#ifdef USE_TIME
     this->sync_time_();
-#ifdef USE_WIFI
-    this->sync_wifi_status_();
 #endif
   }
   this->api_was_connected_ = connected;
 #endif
-
 #ifdef USE_TIME
   if (this->time_id_ != nullptr && millis() - this->last_time_sync_ > SYNC_TIME_INTERVAL) {
     this->sync_time_();
   }
 #endif
+
 #ifdef USE_WIFI
   if (wifi::global_wifi_component != nullptr) {
     this->sync_wifi_status_();
@@ -166,50 +168,28 @@ void LitterRobot4Component::dump_config() {
 #endif
 }
 
-void LitterRobot4Component::read_register(Register reg) {
-  if (this->op_count_ >= MAX_PENDING) {
-    auto *name = register_name(reg);
-    if (name) {
-      ESP_LOGW(TAG, "Operation queue full, dropping read for %s (0x%02X)", name, reg);
-    } else {
-      ESP_LOGW(TAG, "Operation queue full, dropping read for register 0x%02X", reg);
-    }
-    return;
-  }
-
-  auto &op = this->op_queue_[this->op_tail_];
-  op.is_write = false;
-  op.reg = reg;
-  op.timestamp = millis();
-  this->op_tail_ = (this->op_tail_ + 1) % MAX_PENDING;
-  this->op_count_++;
-
-  if (this->op_count_ == 1) {
-    this->send_frame_(OP_READ, reg, 0);
-  }
+static const char *reg_name(Register reg) {
+  auto *name = register_name(reg);
+  return name ? name : "Unknown";
 }
 
-void LitterRobot4Component::write_register(Register reg, uint16_t value) {
-  if (this->op_count_ >= MAX_PENDING) {
-    auto *name = register_name(reg);
-    if (name) {
-      ESP_LOGW(TAG, "Operation queue full, dropping write for %s (0x%02X)", name, reg);
-    } else {
-      ESP_LOGW(TAG, "Operation queue full, dropping write for register 0x%02X", reg);
-    }
+void LitterRobot4Component::push_queue_(Operation op, Register reg, uint16_t value) {
+  bool is_write = op == OP_WRITE;
+  if (this->pending_count_ >= MAX_PENDING) {
+    ESP_LOGW(TAG, "Operation queue full, dropping %s for 0x%02X (%s)", is_write ? "write" : "read", reg, reg_name(reg));
     return;
   }
 
-  auto &op = this->op_queue_[this->op_tail_];
-  op.is_write = true;
-  op.reg = reg;
-  op.value = value;
-  op.timestamp = millis();
-  this->op_tail_ = (this->op_tail_ + 1) % MAX_PENDING;
-  this->op_count_++;
+  auto &pending_op = this->pending_queue_[this->pending_tail_];
+  pending_op.op = op;
+  pending_op.reg = reg;
+  pending_op.value = value;
+  pending_op.timestamp = millis();
+  this->pending_tail_ = (this->pending_tail_ + 1) % MAX_PENDING;
+  this->pending_count_++;
 
-  if (this->op_count_ == 1) {
-    this->send_frame_(OP_WRITE, reg, value);
+  if (this->pending_count_ == 1) {
+    this->send_frame_(op, reg, value);
   }
 }
 
@@ -220,31 +200,22 @@ void LitterRobot4Component::write_sleep_day_enabled(DayOfWeek day, bool enabled)
   } else {
     this->sleep_mask_ &= ~(1 << static_cast<uint8_t>(day));
   }
-  this->write_register(REG_SLEEP_DAY_MASK, this->sleep_mask_);
+  this->queue_register_write(REG_SLEEP_DAY_MASK, this->sleep_mask_);
 }
 
 void LitterRobot4Component::send_frame_(Operation op, Register reg, uint16_t value) {
-  auto *name = register_name(reg);
   if (op == OP_READ) {
-    if (name) {
-      ESP_LOGD(TAG, "ESP read: %s (0x%02X)", name, reg);
-    } else {
-      ESP_LOGD(TAG, "ESP read: reg=0x%02X", reg);
-    }
+    ESP_LOGD(TAG, "ESP read: 0x%02X (%s)", reg, reg_name(reg));
   } else if (op == OP_WRITE) {
-    if (name) {
-      ESP_LOGD(TAG, "ESP write: %s = %u (0x%04X)", name, value, value);
-    } else {
-      ESP_LOGD(TAG, "ESP write: reg=0x%02X value=%u (0x%04X)", reg, value, value);
-    }
+    ESP_LOGD(TAG, "ESP write: 0x%02X = 0x%04X (%s = %u)", reg, value, reg_name(reg), value);
   }
   uint8_t value_high = static_cast<uint8_t>(value >> 8);
   uint8_t value_low = static_cast<uint8_t>(value & 0xFF);
-  uint8_t checksum = (static_cast<uint8_t>(DIR_ESP_TO_PIC) + static_cast<uint8_t>(op) + static_cast<uint8_t>(reg) +
+  uint8_t checksum = (static_cast<uint8_t>(DIR_FROM_ESP) + static_cast<uint8_t>(op) + static_cast<uint8_t>(reg) +
                       value_high + value_low) &
                      0xFF;
 
-  uint8_t frame[FRAME_LENGTH] = {static_cast<uint8_t>(DIR_ESP_TO_PIC),
+  uint8_t frame[FRAME_LENGTH] = {static_cast<uint8_t>(DIR_FROM_ESP),
                                  static_cast<uint8_t>(op),
                                  static_cast<uint8_t>(reg),
                                  value_high,
@@ -265,7 +236,7 @@ void LitterRobot4Component::parse_byte_(uint8_t byte) {
   if (this->rx_buf_[6] == FRAME_TERMINATOR) {
     uint8_t dir = this->rx_buf_[0];
     uint8_t op = this->rx_buf_[1];
-    if ((dir == DIR_PIC_TO_ESP || dir == DIR_ESP_TO_PIC) && op >= OP_READ && op <= OP_WRITE_ACK) {
+    if ((dir == DIR_FROM_PIC || dir == DIR_FROM_ESP) && op >= OP_READ && op <= OP_WRITE_ACK) {
       uint8_t sum = dir + op + this->rx_buf_[2] + this->rx_buf_[3] + this->rx_buf_[4];
       if (sum == this->rx_buf_[5]) {
         uint16_t value = (static_cast<uint16_t>(this->rx_buf_[3]) << 8) | this->rx_buf_[4];
@@ -284,14 +255,14 @@ void LitterRobot4Component::parse_byte_(uint8_t byte) {
 }
 
 void LitterRobot4Component::handle_frame_(Direction dir, Operation op, Register reg, uint16_t value) {
-  if (dir != DIR_PIC_TO_ESP) {
+  if (dir != DIR_FROM_PIC) {
     ESP_LOGD(TAG, "Unexpected direction 0x%02X", dir);
     return;
   }
 
   switch (op) {
     case OP_WRITE:
-      this->handle_event_(reg, value);
+      this->handle_write_(reg, value);
       break;
     case OP_READ_REPLY:
       this->handle_read_reply_(reg, value);
@@ -305,11 +276,13 @@ void LitterRobot4Component::handle_frame_(Direction dir, Operation op, Register 
   }
 }
 
-void LitterRobot4Component::handle_event_(Register reg, uint16_t value) {
+void LitterRobot4Component::handle_write_(Register reg, uint16_t value) {
   if (reg == REG_FACTORY_RESET && value == CMD_FACTORY_RESET) {
     this->set_timeout(3000, [this]() {
-      this->poll_registers();
+      this->poll_registers_();
+#ifdef USE_TIME
       this->sync_time_();
+#endif
     });
   }
 
@@ -317,24 +290,14 @@ void LitterRobot4Component::handle_event_(Register reg, uint16_t value) {
     this->sleep_mask_ = value;
   }
 
-  auto *name = register_name(reg);
-  if (name) {
-    ESP_LOGD(TAG, "PIC write: %s = %u (0x%04X)", name, value, value);
-  } else {
-    ESP_LOGD(TAG, "PIC write: reg=0x%02X value=%u (0x%04X)", reg, value, value);
-  }
+  ESP_LOGD(TAG, "PIC write: 0x%02X = 0x%04X (%s = %u)", reg, value, reg_name(reg), value);
   this->send_frame_(OP_WRITE_ACK, reg, value);
   this->on_register_update_callback_.call(reg, value);
 }
 
 void LitterRobot4Component::handle_read_reply_(Register reg, uint16_t value) {
-  if (this->op_count_ == 0) {
-    auto *name = register_name(reg);
-    if (name) {
-      ESP_LOGD(TAG, "Unexpected read reply for %s (0x%02X)", name, reg);
-    } else {
-      ESP_LOGD(TAG, "Unexpected read reply for register 0x%02X", reg);
-    }
+  if (this->pending_count_ == 0) {
+    ESP_LOGD(TAG, "Unexpected read reply for 0x%02X (%s)", reg, reg_name(reg));
     return;
   }
 
@@ -342,139 +305,85 @@ void LitterRobot4Component::handle_read_reply_(Register reg, uint16_t value) {
     this->sleep_mask_ = value;
   }
 
-  auto &op = this->op_queue_[this->op_head_];
-  if (op.is_write) {
-    auto *got = register_name(reg);
-    ESP_LOGW(TAG, "Unexpected read reply for %s (0x%02X): queue head is a write", got ? got : "?", reg);
+  auto &pending_op = this->pending_queue_[this->pending_head_];
+  if (pending_op.op == OP_WRITE) {
+    ESP_LOGW(TAG, "Unexpected read reply for 0x%02X (%s): queue head is a write", reg, reg_name(reg));
     return;
   }
 
-  if (op.reg != reg) {
-    auto *exp = register_name(op.reg);
-    auto *got = register_name(reg);
-    ESP_LOGW(TAG, "Read reply mismatch: expected %s (0x%02X) got %s (0x%02X)", exp ? exp : "?", op.reg, got ? got : "?",
-             reg);
+  if (pending_op.reg != reg) {
+    ESP_LOGW(TAG, "Read reply mismatch: expected 0x%02X (%s) got 0x%02X (%s)", pending_op.reg, reg_name(pending_op.reg),
+             reg, reg_name(reg));
     return;
   }
 
-  auto *n = register_name(reg);
-  if (n) {
-    ESP_LOGD(TAG, "PIC read reply: %s = %u (0x%04X)", n, value, value);
-  } else {
-    ESP_LOGD(TAG, "PIC read reply: reg=0x%02X value=%u (0x%04X)", reg, value, value);
-  }
-
-  if (reg == REG_SLEEP_DAY_MASK) {
-    this->sleep_mask_ = value;
-  }
+  ESP_LOGD(TAG, "PIC read reply: 0x%02X = 0x%04X (%s = %u)", reg, value, reg_name(reg), value);
 
   this->on_register_update_callback_.call(reg, value);
   this->pop_queue_();
 }
 
 void LitterRobot4Component::handle_write_ack_(Register reg, uint16_t value) {
-  if (this->op_count_ == 0) {
-    auto *name = register_name(reg);
-    if (name) {
-      ESP_LOGD(TAG, "Unexpected write ack for %s (0x%02X)", name, reg);
-    } else {
-      ESP_LOGD(TAG, "Unexpected write ack for register 0x%02X", reg);
-    }
-    return;
-  }
-
-  auto &op = this->op_queue_[this->op_head_];
-  if (!op.is_write) {
-    auto *got = register_name(reg);
-    ESP_LOGW(TAG, "Unexpected write ack for %s (0x%02X): queue head is a read", got ? got : "?", reg);
-    return;
-  }
-
-  if (op.reg != reg || op.value != value) {
-    auto *exp = register_name(op.reg);
-    auto *got = register_name(reg);
-    ESP_LOGW(TAG, "Write ack mismatch: expected %s (0x%02X)=0x%04X got %s (0x%02X)=0x%04X", exp ? exp : "?", op.reg,
-             op.value, got ? got : "?", reg, value);
-    return;
-  }
-
-  auto *n = register_name(reg);
-  if (n) {
-    ESP_LOGD(TAG, "PIC write ack: %s = %u (0x%04X)", n, value, value);
-  } else {
-    ESP_LOGD(TAG, "PIC write ack: reg=0x%02X value=%u (0x%04X)", reg, value, value);
-  }
+  ESP_LOGD(TAG, "PIC write recieved: 0x%02X = 0x%04X  (%s = %u)", reg, value, reg_name(reg), value);
 
   this->pop_queue_();
   this->on_register_update_callback_.call(reg, value);
 }
 
 void LitterRobot4Component::pop_queue_() {
-  this->op_head_ = (this->op_head_ + 1) % MAX_PENDING;
-  this->op_count_--;
+  if (this->pending_count_ == 0) {
+    return;
+  }
+  this->pending_head_ = (this->pending_head_ + 1) % MAX_PENDING;
+  this->pending_count_--;
 
-  if (this->op_count_ > 0) {
-    auto &next = this->op_queue_[this->op_head_];
-    if (next.is_write) {
-      this->send_frame_(OP_WRITE, next.reg, next.value);
-    } else {
-      this->send_frame_(OP_READ, next.reg, 0);
-    }
+  if (this->pending_count_ > 0) {
+    auto &next = this->pending_queue_[this->pending_head_];
+    this->send_frame_(next.op, next.reg, next.value);
     next.timestamp = millis();
   }
 }
 
 void LitterRobot4Component::check_timeouts_() {
-  while (this->op_count_ > 0) {
-    auto &op = this->op_queue_[this->op_head_];
-    if (millis() - op.timestamp <= PENDING_TIMEOUT) {
+  while (this->pending_count_ > 0) {
+    auto &pending_op = this->pending_queue_[this->pending_head_];
+    if (millis() - pending_op.timestamp <= PENDING_TIMEOUT) {
       break;
     }
-    auto *name = register_name(op.reg);
-    if (op.is_write) {
-      if (name) {
-        ESP_LOGW(TAG, "Write ack timeout for %s (0x%02X)", name, op.reg);
-      } else {
-        ESP_LOGW(TAG, "Write ack timeout for register 0x%02X", op.reg);
-      }
-    } else {
-      if (name) {
-        ESP_LOGW(TAG, "Read timeout for %s (0x%02X)", name, op.reg);
-      } else {
-        ESP_LOGW(TAG, "Read timeout for register 0x%02X", op.reg);
-      }
-    }
+    bool is_write = pending_op.op == OP_WRITE;
+    ESP_LOGW(TAG, "%s response for 0x%02X (%s) timed out", is_write ? "Write" : "Read", pending_op.reg,
+             reg_name(pending_op.reg));
     this->pop_queue_();
   }
 }
 
-void LitterRobot4Component::poll_registers() {
+void LitterRobot4Component::poll_registers_() {
   for (auto reg : POLL_REGISTERS) {
-    this->read_register(reg);
+    this->queue_register_read(reg);
   }
 }
 
-void LitterRobot4Component::sync_time_() {
 #ifdef USE_TIME
+void LitterRobot4Component::sync_time_() {
   if (this->time_id_ == nullptr)
     return;
   auto now = this->time_id_->now();
   if (!now.is_valid())
     return;
   // ESPHome Time uses Sunday=1, PIC uses Sunday=0.
-  this->write_register(REG_TIME_DOW, now.day_of_week - 1);
-  this->write_register(REG_TIME_HOUR, now.hour);
-  this->write_register(REG_TIME_MINUTE, now.minute);
-  this->write_register(REG_TIME_SECOND, now.second);
-  this->write_register(REG_TIME_DAY, now.day_of_month);
-  this->write_register(REG_TIME_MONTH, now.month);
+  this->queue_register_write(REG_TIME_DOW, now.day_of_week - 1);
+  this->queue_register_write(REG_TIME_HOUR, now.hour);
+  this->queue_register_write(REG_TIME_MINUTE, now.minute);
+  this->queue_register_write(REG_TIME_SECOND, now.second);
+  this->queue_register_write(REG_TIME_DAY, now.day_of_month);
+  this->queue_register_write(REG_TIME_MONTH, now.month);
   // Original firmware writes only last 2 digits of year.
-  this->write_register(REG_TIME_YEAR, now.year % 100);
+  this->queue_register_write(REG_TIME_YEAR, now.year % 100);
   this->last_time_sync_ = millis();
   ESP_LOGD(TAG, "Time synced: %04d-%02d-%02d %02d:%02d:%02d DOW=%d", now.year, now.month, now.day_of_month, now.hour,
            now.minute, now.second, now.day_of_week - 1);
-#endif
 }
+#endif
 
 #ifdef USE_WIFI
 void LitterRobot4Component::sync_wifi_status_() {
@@ -494,14 +403,14 @@ void LitterRobot4Component::sync_wifi_status_() {
     return;
 
   this->last_wifi_status_ = status;
-  this->write_register(REG_WIFI_STATUS, status);
+  this->queue_register_write(REG_WIFI_STATUS, status);
 }
-#endif
 
 #ifdef USE_WIFI_CONNECT_STATE_LISTENERS
 void LitterRobot4Component::on_wifi_connect_state(StringRef ssid, std::span<const uint8_t, 6> bssid) {
   this->sync_wifi_status_();
 }
+#endif
 #endif
 
 }  // namespace esphome::litter_robot4
