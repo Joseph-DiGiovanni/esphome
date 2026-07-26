@@ -6,7 +6,7 @@ namespace esphome::litter_robot4 {
 static const char *const TAG = "litter_robot4.text_sensor";
 
 void LitterRobot4StatusTextSensor::setup() {
-  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     switch (reg) {
       case REG_ROBOT_STATUS:
         this->robot_status_ = value;
@@ -20,9 +20,11 @@ void LitterRobot4StatusTextSensor::setup() {
       case REG_POWER_TYPE:
         this->on_battery_ = value != 0;
         break;
+#ifdef USE_WIFI
       case REG_WIFI_STATUS:
         this->wifi_disabled_ = value == WIFI_OFF;
         break;
+#endif
       default:
         return;
     }
@@ -56,7 +58,7 @@ void LitterRobot4StatusTextSensor::update_display_() {
 void LitterRobot4StatusTextSensor::dump_config() { LOG_TEXT_SENSOR("", "Litter Robot 4 Status", this); }
 
 void LitterRobot4PowerTypeTextSensor::setup() {
-  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_POWER_TYPE) {
       this->publish_state(value == 0 ? "AC" : "Battery");
     }
