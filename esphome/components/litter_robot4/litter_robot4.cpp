@@ -170,13 +170,204 @@ void LitterRobot4Component::dump_config() {
 
 static const char *reg_name(Register reg) {
   auto *name = register_name(reg);
-  return name ? name : "Unknown";
+  if (name)
+    return name;
+  static char unknown_buf[16];
+  snprintf(unknown_buf, sizeof(unknown_buf), "Unknown (0x%02X)", static_cast<uint8_t>(reg));
+  return unknown_buf;
+}
+
+const char *format_register_value(Register reg, uint16_t value) {
+  static const char *on = "On";
+  static const char *off = "Off";
+  static const char *ac = "AC";
+  static const char *battery = "Battery";
+  static const char *none = "None";
+
+  switch (reg) {
+    case REG_KEYPAD: {
+      static char keypad_buf[32];
+      const char *cmd_name = nullptr;
+      switch (value) {
+        case CMD_KEYPAD_POWER:
+          cmd_name = "Power Pressed";
+          break;
+        case CMD_KEYPAD_RESET:
+          cmd_name = "Reset Pressed";
+          break;
+        case CMD_KEYPAD_CYCLE:
+          cmd_name = "Cycle Pressed";
+          break;
+        case CMD_KEYPAD_EMPTY:
+          cmd_name = "Empty Pressed";
+          break;
+        case CMD_KEYPAD_WIFI:
+          cmd_name = "Connect Pressed";
+          break;
+      }
+      if (cmd_name) {
+        return cmd_name;
+      } else {
+        snprintf(keypad_buf, sizeof(keypad_buf), "%u (0x%04X)", value, value);
+      }
+      return keypad_buf;
+    }
+
+    case REG_FACTORY_RESET:
+      if (value == CMD_FACTORY_RESET) {
+        return "Reset";
+      }
+      break;
+
+    case REG_POWER_TYPE:
+      return value == 0 ? ac : battery;
+
+    case REG_CAT_WEIGHT: {
+      static char weight_buf[16];
+      snprintf(weight_buf, sizeof(weight_buf), "%.1f lbs", static_cast<int16_t>(value) / 100.0f);
+      return weight_buf;
+    }
+
+    case REG_CLEAN_CYCLE_DELAY: {
+      static char delay_buf[16];
+      snprintf(delay_buf, sizeof(delay_buf), "%u min", value);
+      return delay_buf;
+    }
+
+    case REG_PANEL_LOCKOUT:
+    case REG_BONNET_REMOVED:
+    case REG_NIGHT_LIGHT:
+    case REG_SLEEP_STATUS:
+    case REG_WASTE_DRAWER_FULL:
+      return value != 0 ? on : off;
+
+    case REG_WASTE_DRAWER_PCT: {
+      static char pct_buf[16];
+      snprintf(pct_buf, sizeof(pct_buf), "%u%%", value);
+      return pct_buf;
+    }
+
+    case REG_LITTER_LEVEL_RAW: {
+      static char litter_buf[16];
+      snprintf(litter_buf, sizeof(litter_buf), "%u mm", value);
+      return litter_buf;
+    }
+
+    case REG_PANEL_LED: {
+      static char panel_buf[32];
+      uint8_t brightness = static_cast<uint8_t>(value >> 8);
+      const char *level = brightness == 25 ? "Low" : brightness == 50 ? "Medium" : brightness == 100 ? "High" : nullptr;
+      if (level) {
+        snprintf(panel_buf, sizeof(panel_buf), "%s", level);
+      } else {
+        snprintf(panel_buf, sizeof(panel_buf), "%u (0x%04X)", value, value);
+      }
+      return panel_buf;
+    }
+
+    case REG_NIGHT_LIGHT_MODE: {
+      const char *mode = value == 0 ? off : value == 1 ? on : value == 2 ? "Auto" : nullptr;
+      if (mode) {
+        return mode;
+      }
+      static char mode_buf[20];
+      snprintf(mode_buf, sizeof(mode_buf), "%u (0x%04X)", value, value);
+      return mode_buf;
+    }
+
+    case REG_NIGHT_LIGHT_BRIGHTNESS: {
+      static char bright_buf[20];
+      const char *level = value == 25 ? "Low" : value == 50 ? "Medium" : value == 100 ? "High" : nullptr;
+      if (level) {
+        snprintf(bright_buf, sizeof(bright_buf), "%s", level);
+      } else {
+        snprintf(bright_buf, sizeof(bright_buf), "%u (0x%04X)", value, value);
+      }
+      return bright_buf;
+    }
+
+    case REG_ROBOT_STATUS: {
+      auto *name = status_name(value);
+      static char status_buf[32];
+      if (name) {
+        return name;
+      } else {
+        snprintf(status_buf, sizeof(status_buf), "%u (0x%04X)", value, value);
+      }
+      return status_buf;
+    }
+
+#ifdef USE_WIFI
+    case REG_WIFI_STATUS: {
+      static char wifi_buf[32];
+      const char *wifi_name = nullptr;
+      switch (value) {
+        case WIFI_OFF:
+          wifi_name = "Off";
+          break;
+        case WIFI_PAIRING:
+          wifi_name = "Pairing";
+          break;
+        case WIFI_CONNECTING:
+          wifi_name = "Connecting";
+          break;
+        case WIFI_CONNECTED:
+          wifi_name = "Connected";
+          break;
+        case WIFI_ERROR:
+          wifi_name = "Error";
+          break;
+      }
+      if (wifi_name) {
+        return wifi_name;
+      } else {
+        snprintf(wifi_buf, sizeof(wifi_buf), "%u (0x%04X)", value, value);
+      }
+      return wifi_buf;
+    }
+#endif
+
+    case REG_FAULT_CODE: {
+      static char fault_buf[16];
+      snprintf(fault_buf, sizeof(fault_buf), "%s (%u)", value != 0 ? "Fault" : none, value);
+      return fault_buf;
+    }
+
+    case REG_SLEEP_SUN:
+    case REG_WAKE_SUN:
+    case REG_SLEEP_MON:
+    case REG_WAKE_MON:
+    case REG_SLEEP_TUE:
+    case REG_WAKE_TUE:
+    case REG_SLEEP_WED:
+    case REG_WAKE_WED:
+    case REG_SLEEP_THU:
+    case REG_WAKE_THU:
+    case REG_SLEEP_FRI:
+    case REG_WAKE_FRI:
+    case REG_SLEEP_SAT:
+    case REG_WAKE_SAT: {
+      static char time_buf[8];
+      snprintf(time_buf, sizeof(time_buf), "%02u:%02u", value / 60, value % 60);
+      return time_buf;
+    }
+
+    case REG_HEARTBEAT:
+      return value == 99 ? "Normal" : nullptr;
+
+    default:
+      break;
+  }
+
+  static char fallback_buf[20];
+  snprintf(fallback_buf, sizeof(fallback_buf), "%u (0x%04X)", value, value);
+  return fallback_buf;
 }
 
 void LitterRobot4Component::push_queue_(Operation op, Register reg, uint16_t value) {
   bool is_write = op == OP_WRITE;
   if (this->pending_count_ >= MAX_PENDING) {
-    ESP_LOGW(TAG, "Operation queue full, dropping %s for 0x%02X (%s)", is_write ? "write" : "read", reg, reg_name(reg));
+    ESP_LOGW(TAG, "Queue full, dropping %s for %s (0x%02X)", is_write ? "write" : "read", reg_name(reg), reg);
     return;
   }
 
@@ -205,9 +396,9 @@ void LitterRobot4Component::write_sleep_day_enabled(DayOfWeek day, bool enabled)
 
 void LitterRobot4Component::send_frame_(Operation op, Register reg, uint16_t value) {
   if (op == OP_READ) {
-    ESP_LOGD(TAG, "ESP read: 0x%02X (%s)", reg, reg_name(reg));
+    ESP_LOGD(TAG, "ESP queried %s", reg_name(reg));
   } else if (op == OP_WRITE) {
-    ESP_LOGD(TAG, "ESP write: 0x%02X = 0x%04X (%s = %u)", reg, value, reg_name(reg), value);
+    ESP_LOGD(TAG, "ESP set %s to %s", reg_name(reg), format_register_value(reg, value));
   }
   uint8_t value_high = static_cast<uint8_t>(value >> 8);
   uint8_t value_low = static_cast<uint8_t>(value & 0xFF);
@@ -290,14 +481,15 @@ void LitterRobot4Component::handle_write_(Register reg, uint16_t value) {
     this->sleep_mask_ = value;
   }
 
-  ESP_LOGD(TAG, "PIC write: 0x%02X = 0x%04X (%s = %u)", reg, value, reg_name(reg), value);
+  ESP_LOGD(TAG, "PIC reported %s as %s", reg_name(reg), format_register_value(reg, value));
   this->send_frame_(OP_WRITE_ACK, reg, value);
   this->on_register_update_callback_.call(reg, value);
 }
 
 void LitterRobot4Component::handle_read_reply_(Register reg, uint16_t value) {
   if (this->pending_count_ == 0) {
-    ESP_LOGD(TAG, "Unexpected read reply for 0x%02X (%s)", reg, reg_name(reg));
+    ESP_LOGD(TAG, "Unsolicited PIC reply: %s is %s (0x%02X=0x%04X)", reg_name(reg), format_register_value(reg, value),
+             reg, value);
     return;
   }
 
@@ -307,24 +499,25 @@ void LitterRobot4Component::handle_read_reply_(Register reg, uint16_t value) {
 
   auto &pending_op = this->pending_queue_[this->pending_head_];
   if (pending_op.op == OP_WRITE) {
-    ESP_LOGW(TAG, "Unexpected read reply for 0x%02X (%s): queue head is a write", reg, reg_name(reg));
+    ESP_LOGW(TAG, "PIC replied %s is %s but a write was expected (0x%02X=0x%04X)", reg_name(reg),
+             format_register_value(reg, value), reg, value);
     return;
   }
 
   if (pending_op.reg != reg) {
-    ESP_LOGW(TAG, "Read reply mismatch: expected 0x%02X (%s) got 0x%02X (%s)", pending_op.reg, reg_name(pending_op.reg),
-             reg, reg_name(reg));
+    ESP_LOGW(TAG, "PIC replied %s is %s but %s was expected (0x%02X=0x%04X vs 0x%02X)", reg_name(reg),
+             format_register_value(reg, value), reg_name(pending_op.reg), reg, value, pending_op.reg);
     return;
   }
 
-  ESP_LOGD(TAG, "PIC read reply: 0x%02X = 0x%04X (%s = %u)", reg, value, reg_name(reg), value);
+  ESP_LOGD(TAG, "PIC replied %s is %s", reg_name(reg), format_register_value(reg, value));
 
   this->on_register_update_callback_.call(reg, value);
   this->pop_queue_();
 }
 
 void LitterRobot4Component::handle_write_ack_(Register reg, uint16_t value) {
-  ESP_LOGD(TAG, "PIC write recieved: 0x%02X = 0x%04X  (%s = %u)", reg, value, reg_name(reg), value);
+  ESP_LOGD(TAG, "PIC acknowledged %s as %s", reg_name(reg), format_register_value(reg, value));
 
   this->pop_queue_();
   this->on_register_update_callback_.call(reg, value);
@@ -351,8 +544,7 @@ void LitterRobot4Component::check_timeouts_() {
       break;
     }
     bool is_write = pending_op.op == OP_WRITE;
-    ESP_LOGW(TAG, "%s response for 0x%02X (%s) timed out", is_write ? "Write" : "Read", pending_op.reg,
-             reg_name(pending_op.reg));
+    ESP_LOGW(TAG, "%s for %s timed out", is_write ? "Write" : "Read", reg_name(pending_op.reg));
     this->pop_queue_();
   }
 }

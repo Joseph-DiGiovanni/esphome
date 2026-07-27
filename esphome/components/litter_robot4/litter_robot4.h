@@ -145,6 +145,7 @@ struct StatusInfo {
 
 const char *register_name(Register reg);
 const char *status_name(uint16_t status);
+const char *format_register_value(Register reg, uint16_t value);
 
 struct PendingOperation {
   Operation op{};
