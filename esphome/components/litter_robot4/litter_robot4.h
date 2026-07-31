@@ -15,7 +15,7 @@ namespace esphome::litter_robot4 {
 static const uint8_t FRAME_LENGTH = 7;
 static const uint8_t FRAME_TERMINATOR = 0xFF;
 static const uint8_t MAX_PENDING = 64;
-static const uint32_t PENDING_TIMEOUT = 200;
+static const uint32_t PENDING_TIMEOUT = 50;
 
 static const uint32_t SYNC_TIME_INTERVAL = 86400000;
 
@@ -151,7 +151,6 @@ struct PendingOperation {
   Operation op{};
   Register reg{};
   uint16_t value{0};
-  uint32_t timestamp{0};
 };
 
 class LitterRobot4Component final : public uart::UARTDevice,
@@ -199,11 +198,12 @@ class LitterRobot4Component final : public uart::UARTDevice,
 
   PendingOperation pending_queue_[MAX_PENDING];
   uint8_t pending_head_{0}, pending_tail_{0}, pending_count_{0};
+  uint32_t pending_timestamp_{0};
 
   LazyCallbackManager<void(Register, uint16_t)> on_register_update_callback_;
 
   uint16_t sleep_mask_{0};
-  bool api_was_connected_{false};
+  bool pic_ready_{false};
 #ifdef USE_WIFI
   WifiStatus last_wifi_status_{WifiStatus{0xFF}};
 #endif

@@ -9,17 +9,18 @@ namespace esphome::litter_robot4 {
 
 static const char *const TAG = "litter_robot4";
 
-static const Register POLL_REGISTERS[] = {REG_POWER_TYPE,        REG_PANEL_LED,         REG_CLEAN_CYCLE_DELAY,
-                                          REG_PANEL_LOCKOUT,     REG_NIGHT_LIGHT_MODE,  REG_NIGHT_LIGHT_BRIGHTNESS,
-                                          REG_SLEEP_DAY_MASK,    REG_SLEEP_SUN,         REG_WAKE_SUN,
-                                          REG_SLEEP_MON,         REG_WAKE_MON,          REG_SLEEP_TUE,
-                                          REG_WAKE_TUE,          REG_SLEEP_WED,         REG_WAKE_WED,
-                                          REG_SLEEP_THU,         REG_WAKE_THU,          REG_SLEEP_FRI,
-                                          REG_WAKE_FRI,          REG_SLEEP_SAT,         REG_WAKE_SAT,
-                                          REG_ROBOT_STATUS,      REG_FAULT_CODE,        REG_SLEEP_STATUS,
-                                          REG_BONNET_REMOVED,    REG_NIGHT_LIGHT,       REG_POWER_CYCLE_COUNT,
-                                          REG_CLEAN_CYCLE_COUNT, REG_EMPTY_CYCLE_COUNT, REG_FILTER_CYCLE_COUNT,
-                                          REG_WASTE_DRAWER_PCT,  REG_WASTE_DRAWER_FULL, REG_LITTER_LEVEL_RAW};
+static const Register POLL_REGISTERS[] = {REG_POWER_TYPE,         REG_PANEL_LED,         REG_CLEAN_CYCLE_DELAY,
+                                          REG_PANEL_LOCKOUT,      REG_NIGHT_LIGHT_MODE,  REG_NIGHT_LIGHT_BRIGHTNESS,
+                                          REG_SLEEP_DAY_MASK,     REG_SLEEP_SUN,         REG_WAKE_SUN,
+                                          REG_SLEEP_MON,          REG_WAKE_MON,          REG_SLEEP_TUE,
+                                          REG_WAKE_TUE,           REG_SLEEP_WED,         REG_WAKE_WED,
+                                          REG_SLEEP_THU,          REG_WAKE_THU,          REG_SLEEP_FRI,
+                                          REG_WAKE_FRI,           REG_SLEEP_SAT,         REG_WAKE_SAT,
+                                          REG_WIFI_STATUS,        REG_ROBOT_STATUS,      REG_FAULT_CODE,
+                                          REG_SLEEP_STATUS,       REG_BONNET_REMOVED,    REG_NIGHT_LIGHT,
+                                          REG_POWER_CYCLE_COUNT,  REG_CLEAN_CYCLE_COUNT, REG_EMPTY_CYCLE_COUNT,
+                                          REG_FILTER_CYCLE_COUNT, REG_WASTE_DRAWER_PCT,  REG_WASTE_DRAWER_FULL,
+                                          REG_LITTER_LEVEL_RAW};
 
 static const RegisterInfo REGISTER_NAMES[] = {
     {REG_KEYPAD, "Keypad"},
@@ -106,6 +107,7 @@ void LitterRobot4Component::setup() {
       return;
     }
     if (reg == REG_WIFI_STATUS) {
+      this->last_wifi_status_ = static_cast<WifiStatus>(value);
       bool wifi_disabled = wifi::global_wifi_component->is_disabled();
       if (value == WIFI_OFF) {
         if (!wifi_disabled) {
@@ -119,6 +121,8 @@ void LitterRobot4Component::setup() {
           this->sync_wifi_status_();
         }
       }
+    } else if (reg == REG_ROBOT_STATUS && value == STATUS_READY) {
+      this->set_timeout("wifi_status_check", 500, [this] { this->queue_register_read(REG_WIFI_STATUS); });
     }
   });
 
@@ -137,19 +141,8 @@ void LitterRobot4Component::loop() {
 
   this->check_timeouts_();
 
-#ifdef USE_API
-  // Poll registers and sync time when API connects so the frontend immediately gets fresh state after a reconnect.
-  bool connected = api::global_api_server->is_connected();
-  if (connected && !this->api_was_connected_) {
-    this->poll_registers_();
 #ifdef USE_TIME
-    this->sync_time_();
-#endif
-  }
-  this->api_was_connected_ = connected;
-#endif
-#ifdef USE_TIME
-  if (this->time_id_ != nullptr && millis() - this->last_time_sync_ > SYNC_TIME_INTERVAL) {
+  if (millis() - this->last_time_sync_ > SYNC_TIME_INTERVAL) {
     this->sync_time_();
   }
 #endif
@@ -375,11 +368,11 @@ void LitterRobot4Component::push_queue_(Operation op, Register reg, uint16_t val
   pending_op.op = op;
   pending_op.reg = reg;
   pending_op.value = value;
-  pending_op.timestamp = millis();
   this->pending_tail_ = (this->pending_tail_ + 1) % MAX_PENDING;
   this->pending_count_++;
 
   if (this->pending_count_ == 1) {
+    this->pending_timestamp_ = millis();
     this->send_frame_(op, reg, value);
   }
 }
@@ -451,6 +444,17 @@ void LitterRobot4Component::handle_frame_(Direction dir, Operation op, Register 
     return;
   }
 
+  if (!this->pic_ready_) {
+    this->pic_ready_ = true;
+    ESP_LOGD(TAG, "PIC Ready");
+    this->set_timeout("init_poll", 500, [this] {
+      this->poll_registers_();
+#ifdef USE_TIME
+      this->sync_time_();
+#endif
+    });
+  }
+
   switch (op) {
     case OP_WRITE:
       this->handle_write_(reg, value);
@@ -469,12 +473,7 @@ void LitterRobot4Component::handle_frame_(Direction dir, Operation op, Register 
 
 void LitterRobot4Component::handle_write_(Register reg, uint16_t value) {
   if (reg == REG_FACTORY_RESET && value == CMD_FACTORY_RESET) {
-    this->set_timeout(3000, [this]() {
-      this->poll_registers_();
-#ifdef USE_TIME
-      this->sync_time_();
-#endif
-    });
+    this->pic_ready_ = false;
   }
 
   if (reg == REG_SLEEP_DAY_MASK) {
@@ -483,6 +482,10 @@ void LitterRobot4Component::handle_write_(Register reg, uint16_t value) {
 
   ESP_LOGD(TAG, "PIC reported %s as %s", reg_name(reg), format_register_value(reg, value));
   this->send_frame_(OP_WRITE_ACK, reg, value);
+  if (this->pending_count_ > 0 && this->pending_queue_[this->pending_head_].op == OP_WRITE &&
+      this->pending_queue_[this->pending_head_].reg == reg) {
+    this->pop_queue_();
+  }
   this->on_register_update_callback_.call(reg, value);
 }
 
@@ -507,7 +510,6 @@ void LitterRobot4Component::handle_read_reply_(Register reg, uint16_t value) {
   if (pending_op.reg != reg) {
     ESP_LOGW(TAG, "PIC replied %s is %s but %s was expected (0x%02X=0x%04X vs 0x%02X)", reg_name(reg),
              format_register_value(reg, value), reg_name(pending_op.reg), reg, value, pending_op.reg);
-    return;
   }
 
   ESP_LOGD(TAG, "PIC replied %s is %s", reg_name(reg), format_register_value(reg, value));
@@ -532,15 +534,15 @@ void LitterRobot4Component::pop_queue_() {
 
   if (this->pending_count_ > 0) {
     auto &next = this->pending_queue_[this->pending_head_];
+    this->pending_timestamp_ = millis();
     this->send_frame_(next.op, next.reg, next.value);
-    next.timestamp = millis();
   }
 }
 
 void LitterRobot4Component::check_timeouts_() {
   while (this->pending_count_ > 0) {
     auto &pending_op = this->pending_queue_[this->pending_head_];
-    if (millis() - pending_op.timestamp <= PENDING_TIMEOUT) {
+    if (millis() - this->pending_timestamp_ <= PENDING_TIMEOUT) {
       break;
     }
     bool is_write = pending_op.op == OP_WRITE;
