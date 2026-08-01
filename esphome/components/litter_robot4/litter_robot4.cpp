@@ -135,8 +135,9 @@ void LitterRobot4Component::setup() {
 }
 
 void LitterRobot4Component::loop() {
-  while (this->available()) {
-    this->parse_byte_(this->read());
+  bool frame_processed = false;
+  while (!frame_processed && this->available()) {
+    frame_processed = this->parse_byte_(this->read());
   }
 
   this->check_timeouts_();
@@ -410,11 +411,11 @@ void LitterRobot4Component::send_frame_(Operation op, Register reg, uint16_t val
   this->write_array(frame, FRAME_LENGTH);
 }
 
-void LitterRobot4Component::parse_byte_(uint8_t byte) {
+bool LitterRobot4Component::parse_byte_(uint8_t byte) {
   this->rx_buf_[this->rx_count_++] = byte;
 
   if (this->rx_count_ < FRAME_LENGTH) {
-    return;
+    return false;
   }
 
   if (this->rx_buf_[6] == FRAME_TERMINATOR) {
@@ -427,7 +428,7 @@ void LitterRobot4Component::parse_byte_(uint8_t byte) {
         this->handle_frame_(static_cast<Direction>(dir), static_cast<Operation>(op),
                             static_cast<Register>(this->rx_buf_[2]), value);
         this->rx_count_ = 0;
-        return;
+        return true;
       }
     }
   }
@@ -436,6 +437,7 @@ void LitterRobot4Component::parse_byte_(uint8_t byte) {
     this->rx_buf_[i] = this->rx_buf_[i + 1];
   }
   this->rx_count_ = FRAME_LENGTH - 1;
+  return false;
 }
 
 void LitterRobot4Component::handle_frame_(Direction dir, Operation op, Register reg, uint16_t value) {

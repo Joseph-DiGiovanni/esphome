@@ -177,7 +177,7 @@ class LitterRobot4Component final : public uart::UARTDevice,
  protected:
   void poll_registers_();
   void send_frame_(Operation op, Register reg, uint16_t value);
-  void parse_byte_(uint8_t byte);
+  bool parse_byte_(uint8_t byte);
   void handle_frame_(Direction dir, Operation op, Register reg, uint16_t value);
   void handle_write_(Register reg, uint16_t value);
   void handle_read_reply_(Register reg, uint16_t value);
