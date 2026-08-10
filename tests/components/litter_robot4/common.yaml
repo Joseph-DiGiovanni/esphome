@@ -1,5 +1,6 @@
 litter_robot4:
   id: my_litter_robot4
+  cat_weight_tolerance: 1.0
 
 text_sensor:
   - platform: litter_robot4
@@ -17,8 +18,16 @@ sensor:
     type: litter_level
     name: "Litter Level"
   - platform: litter_robot4
-    type: cat_weight
+    type: last_cat_weight
     name: "Cat Weight"
+  - platform: litter_robot4
+    type: cat_visit_count
+    name: "Neji Visits"
+    cat_weight: neji
+  - platform: litter_robot4
+    type: cat_visit_count
+    name: "Pubert Visits"
+    cat_weight: pubert
   - platform: litter_robot4
     type: clean_cycle_count
     name: "Clean Cycles"
@@ -54,7 +63,16 @@ button:
 
 number:
   - platform: litter_robot4
+    type: clean_cycle_delay
     name: "Clean Cycle Delay"
+  - platform: litter_robot4
+    type: cat_weight
+    id: neji
+    name: "Neji Weight"
+  - platform: litter_robot4
+    type: cat_weight
+    id: pubert
+    name: "Pubert Weight"
 
 select:
   - platform: litter_robot4

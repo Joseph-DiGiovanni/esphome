@@ -1,6 +1,12 @@
 #include "litter_robot4.h"
 #include "esphome/core/log.h"
 
+#if LITTER_ROBOT4_MAX_TRACKED_CATS > 0
+#include "number/number.h"
+#include <cmath>
+#include <limits>
+#endif
+
 #ifdef USE_API
 #include "esphome/components/api/api_server.h"
 #endif
@@ -159,6 +165,9 @@ void LitterRobot4Component::dump_config() {
   ESP_LOGCONFIG(TAG, "Litter Robot 4:");
 #ifdef USE_TIME
   ESP_LOGCONFIG(TAG, "  Time sync: %s", this->time_id_ != nullptr ? "Enabled" : "Disabled");
+#endif
+#if LITTER_ROBOT4_MAX_TRACKED_CATS > 0
+  ESP_LOGCONFIG(TAG, "  Cat weight tolerance: %.1f lbs", this->cat_weight_tolerance_);
 #endif
 }
 
@@ -489,6 +498,11 @@ void LitterRobot4Component::handle_write_(Register reg, uint16_t value) {
     this->pop_queue_();
   }
   this->on_register_update_callback_.call(reg, value);
+#if LITTER_ROBOT4_MAX_TRACKED_CATS > 0
+  if (reg == REG_CAT_WEIGHT) {
+    this->handle_cat_weight_(value);
+  }
+#endif
 }
 
 void LitterRobot4Component::handle_read_reply_(Register reg, uint16_t value) {
@@ -517,6 +531,11 @@ void LitterRobot4Component::handle_read_reply_(Register reg, uint16_t value) {
   ESP_LOGD(TAG, "PIC replied %s is %s", reg_name(reg), format_register_value(reg, value));
 
   this->on_register_update_callback_.call(reg, value);
+#if LITTER_ROBOT4_MAX_TRACKED_CATS > 0
+  if (reg == REG_CAT_WEIGHT) {
+    this->handle_cat_weight_(value);
+  }
+#endif
   this->pop_queue_();
 }
 
@@ -607,6 +626,37 @@ void LitterRobot4Component::on_wifi_connect_state(StringRef ssid, std::span<cons
   this->sync_wifi_status_();
 }
 #endif
+#endif
+
+#if LITTER_ROBOT4_MAX_TRACKED_CATS > 0
+void LitterRobot4Component::register_tracked_cat(LitterRobot4CatWeightNumber *sensor) {
+  if (this->tracked_cat_sensors_.size() >= LITTER_ROBOT4_MAX_TRACKED_CATS) {
+    ESP_LOGW(TAG, "Cannot track more than %u cats", LITTER_ROBOT4_MAX_TRACKED_CATS);
+    return;
+  }
+  this->tracked_cat_sensors_.push_back(sensor);
+}
+
+void LitterRobot4Component::handle_cat_weight_(uint16_t value) {
+  float new_weight = static_cast<int16_t>(value) / 100.0f;
+  LitterRobot4CatWeightNumber *best = nullptr;
+  float best_distance = std::numeric_limits<float>::max();
+  for (auto *cat_weight : this->tracked_cat_sensors_) {
+    if (cat_weight->state <= 0.0f || std::isnan(cat_weight->state)) {
+      continue;
+    }
+    float distance = std::abs(new_weight - cat_weight->state);
+    if (distance <= this->cat_weight_tolerance_ && distance < best_distance) {
+      best = cat_weight;
+      best_distance = distance;
+    }
+  }
+  if (best != nullptr) {
+    ESP_LOGD(TAG, "Matched cat weight %.1f lbs to sensor with weight %.1f lbs (distance %.1f lbs)", new_weight,
+             best->state, best_distance);
+    best->publish_weight(new_weight);
+  }
+}
 #endif
 
 }  // namespace esphome::litter_robot4
