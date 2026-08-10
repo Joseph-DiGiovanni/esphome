@@ -11,6 +11,7 @@ from esphome.const import (
 )
 
 from .. import CONF_LITTER_ROBOT4_ID, LitterRobot4Component, litter_robot4_ns
+from ..number import LitterRobot4CatWeightNumber
 
 DEPENDENCIES = ["litter_robot4"]
 
@@ -44,6 +45,14 @@ OdometerSensor = litter_robot4_ns.class_(
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
+CatVisitCountSensor = litter_robot4_ns.class_(
+    "LitterRobot4CatVisitCountSensor",
+    sensor.Sensor,
+    cg.Component,
+    cg.Parented.template(LitterRobot4Component),
+)
+
+CONF_CAT_WEIGHT = "cat_weight"
 
 _ODOMETER_REGISTERS = {
     "power_cycle_count": "REG_POWER_CYCLE_COUNT",
@@ -90,12 +99,22 @@ CONFIG_SCHEMA = cv.typed_schema(
         "litter_level": _sensor_schema(
             LitterRobot4LitterLevelSensor, unit=UNIT_PERCENT, icon="mdi:tray-full"
         ),
-        "cat_weight": _sensor_schema(
+        "last_cat_weight": _sensor_schema(
             CatWeightSensor,
             unit=UNIT_POUND,
             acc_decimals=2,
             device_class=DEVICE_CLASS_WEIGHT,
             icon="mdi:weight",
+        ),
+        "cat_visit_count": _sensor_schema(
+            CatVisitCountSensor,
+            acc_decimals=0,
+            state_class=STATE_CLASS_TOTAL_INCREASING,
+            icon="mdi:cat",
+        ).extend(
+            {
+                cv.GenerateID(CONF_CAT_WEIGHT): cv.use_id(LitterRobot4CatWeightNumber),
+            }
         ),
         "clean_cycle_count": _sensor_schema(
             CleanCycleCountSensor,
@@ -127,6 +146,14 @@ CONFIG_SCHEMA = cv.typed_schema(
 
 async def to_code(config):
     parent = await cg.get_variable(config[CONF_LITTER_ROBOT4_ID])
+    if config[CONF_TYPE] == "cat_visit_count":
+        var = await sensor.new_sensor(config)
+        await cg.register_component(var, config)
+        await cg.register_parented(var, parent)
+        cat = await cg.get_variable(config[CONF_CAT_WEIGHT])
+        cg.add(var.set_cat_number(cat))
+        return
+
     var = await sensor.new_sensor(config)
     await cg.register_component(var, config)
     await cg.register_parented(var, parent)
