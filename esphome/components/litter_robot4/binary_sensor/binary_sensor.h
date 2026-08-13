@@ -46,4 +46,20 @@ class LitterRobot4FaultStatusBinarySensor : public binary_sensor::BinarySensor,
   void dump_config() override;
 };
 
+class LitterRobot4LaserDetectBinarySensor : public binary_sensor::BinarySensor,
+                                            public Component,
+                                            public Parented<LitterRobot4Component> {
+ public:
+  void setup() override;
+  void dump_config() override;
+};
+
+class LitterRobot4WeightDetectBinarySensor : public binary_sensor::BinarySensor,
+                                             public Component,
+                                             public Parented<LitterRobot4Component> {
+ public:
+  void setup() override;
+  void dump_config() override;
+};
+
 }  // namespace esphome::litter_robot4

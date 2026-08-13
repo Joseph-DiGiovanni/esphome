@@ -123,3 +123,9 @@ binary_sensor:
   - platform: litter_robot4
     type: fault_status
     name: "Fault Status"
+  - platform: litter_robot4
+    type: laser_detect
+    name: "Laser Detect"
+  - platform: litter_robot4
+    type: weight_detect
+    name: "Weight Detect"
