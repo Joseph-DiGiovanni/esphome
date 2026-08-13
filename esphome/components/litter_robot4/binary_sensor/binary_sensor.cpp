@@ -59,4 +59,36 @@ void LitterRobot4FaultStatusBinarySensor::setup() {
 
 void LitterRobot4FaultStatusBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Fault Status", this); }
 
+void LitterRobot4LaserDetectBinarySensor::setup() {
+  this->publish_initial_state(false);
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
+    if (reg == REG_DETECTION_EVENT) {
+      if (value == DETECTION_EVENT_LASER_DETECTED) {
+        this->publish_state(true);
+      } else if (value == DETECTION_EVENT_LASER_CLEAR) {
+        this->publish_state(false);
+      }
+    }
+  });
+}
+
+void LitterRobot4LaserDetectBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Laser Detect", this); }
+
+void LitterRobot4WeightDetectBinarySensor::setup() {
+  this->publish_initial_state(false);
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
+    if (reg == REG_DETECTION_EVENT) {
+      if (value == DETECTION_EVENT_WEIGHT_DETECTED) {
+        this->publish_state(true);
+      } else if (value == DETECTION_EVENT_WEIGHT_CLEAR) {
+        this->publish_state(false);
+      }
+    }
+  });
+}
+
+void LitterRobot4WeightDetectBinarySensor::dump_config() {
+  LOG_BINARY_SENSOR("", "Litter Robot 4 Weight Detect", this);
+}
+
 }  // namespace esphome::litter_robot4

@@ -73,6 +73,7 @@ enum Register : uint8_t {
   REG_ROBOT_STATUS = 0x34,
   REG_FAULT_CODE = 0x35,
   REG_SLEEP_STATUS = 0x32,
+  REG_DETECTION_EVENT = 0x37,
   REG_BONNET_REMOVED = 0x3A,
   REG_NIGHT_LIGHT = 0x3B,
   REG_POWER_CYCLE_COUNT = 0x3D,
@@ -82,6 +83,9 @@ enum Register : uint8_t {
   REG_WASTE_DRAWER_PCT = 0x43,
   REG_WASTE_DRAWER_FULL = 0x44,
   REG_LITTER_LEVEL_RAW = 0x47,
+  REG_LASER_1 = 0x58,
+  REG_LASER_2 = 0x59,
+  REG_LASER_3 = 0x5A,
 };
 
 enum RobotStatus : uint16_t {
@@ -113,6 +117,13 @@ enum Command : uint16_t {
   CMD_REPLACE_FILTER = 0x000C,
   CMD_FACTORY_RESET = 0x0001,
   CMD_START_CLEAN = 0x000A,
+};
+
+enum DetectionEvent : uint16_t {
+  DETECTION_EVENT_LASER_CLEAR = 0x10,
+  DETECTION_EVENT_LASER_DETECTED = 0x11,
+  DETECTION_EVENT_WEIGHT_CLEAR = 0x20,
+  DETECTION_EVENT_WEIGHT_DETECTED = 0x21,
 };
 
 enum KeypadCommand : uint16_t {
