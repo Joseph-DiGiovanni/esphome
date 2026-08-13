@@ -65,6 +65,7 @@ static const RegisterInfo REGISTER_NAMES[] = {
     {REG_ROBOT_STATUS, "Robot Status"},
     {REG_FAULT_CODE, "Fault Code"},
     {REG_SLEEP_STATUS, "Sleep Status"},
+    {REG_DETECTION_EVENT, "Detection Event"},
     {REG_BONNET_REMOVED, "Bonnet Removed"},
     {REG_NIGHT_LIGHT, "Night Light"},
     {REG_POWER_CYCLE_COUNT, "Power Cycle Count"},
@@ -74,6 +75,9 @@ static const RegisterInfo REGISTER_NAMES[] = {
     {REG_WASTE_DRAWER_PCT, "Waste Drawer Percent"},
     {REG_WASTE_DRAWER_FULL, "Waste Drawer Full"},
     {REG_LITTER_LEVEL_RAW, "Litter Level Raw Distance"},
+    {REG_LASER_1, "Laser Sensor 1"},
+    {REG_LASER_2, "Laser Sensor 2"},
+    {REG_LASER_3, "Laser Sensor 3"},
 };
 
 static const StatusInfo STATUS_NAMES[] = {
@@ -244,6 +248,20 @@ const char *format_register_value(Register reg, uint16_t value) {
     case REG_WASTE_DRAWER_FULL:
       return value != 0 ? on : off;
 
+    case REG_DETECTION_EVENT: {
+      switch (value) {
+        case DETECTION_EVENT_LASER_CLEAR:
+          return "Laser clear";
+        case DETECTION_EVENT_LASER_DETECTED:
+          return "Laser triggered";
+        case DETECTION_EVENT_WEIGHT_CLEAR:
+          return "Weight clear";
+        case DETECTION_EVENT_WEIGHT_DETECTED:
+          return "Weight detected";
+      }
+      break;
+    }
+
     case REG_WASTE_DRAWER_PCT: {
       static char pct_buf[16];
       snprintf(pct_buf, sizeof(pct_buf), "%u%%", value);
@@ -254,6 +272,14 @@ const char *format_register_value(Register reg, uint16_t value) {
       static char litter_buf[16];
       snprintf(litter_buf, sizeof(litter_buf), "%u mm", value);
       return litter_buf;
+    }
+
+    case REG_LASER_1:
+    case REG_LASER_2:
+    case REG_LASER_3: {
+      static char laser_buf[16];
+      snprintf(laser_buf, sizeof(laser_buf), "%u mm", value);
+      return laser_buf;
     }
 
     case REG_PANEL_LED: {
