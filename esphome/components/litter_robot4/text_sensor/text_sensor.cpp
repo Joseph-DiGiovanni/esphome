@@ -20,6 +20,24 @@ void LitterRobot4StatusTextSensor::setup() {
       case REG_POWER_TYPE:
         this->on_battery_ = value != 0;
         break;
+      case REG_DETECTION_EVENT:
+        switch (value) {
+          case DETECTION_EVENT_LASER_CLEAR:
+            this->laser_detected_ = false;
+            break;
+          case DETECTION_EVENT_LASER_DETECTED:
+            this->laser_detected_ = true;
+            break;
+          case DETECTION_EVENT_WEIGHT_CLEAR:
+            this->weight_detected_ = false;
+            break;
+          case DETECTION_EVENT_WEIGHT_DETECTED:
+            this->weight_detected_ = true;
+            break;
+          default:
+            return;
+        }
+        break;
 #ifdef USE_WIFI
       case REG_WIFI_STATUS:
         this->wifi_disabled_ = value == WIFI_OFF;
@@ -50,9 +68,13 @@ void LitterRobot4StatusTextSensor::update_display_() {
     return;
   }
   auto *str = status_name(this->robot_status_);
-  if (str != nullptr) {
-    this->publish_state(str);
+  if (str == nullptr) {
+    return;
   }
+  if (this->robot_status_ == STATUS_CAT_DETECTED && !this->laser_detected_ && !this->weight_detected_) {
+    str = "Waiting to cycle";
+  }
+  this->publish_state(str);
 }
 
 void LitterRobot4StatusTextSensor::dump_config() { LOG_TEXT_SENSOR("", "Litter Robot 4 Status", this); }

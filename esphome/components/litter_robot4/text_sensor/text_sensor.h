@@ -19,6 +19,8 @@ class LitterRobot4StatusTextSensor : public text_sensor::TextSensor,
   bool waste_drawer_full_{false};
   bool on_battery_{false};
   bool wifi_disabled_{false};
+  bool laser_detected_{false};
+  bool weight_detected_{false};
   void update_display_();
 };
 
