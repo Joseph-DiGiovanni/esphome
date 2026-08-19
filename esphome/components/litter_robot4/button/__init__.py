@@ -30,12 +30,6 @@ LitterRobot4FactoryResetButton = litter_robot4_ns.class_(
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
-LitterRobot4PowerButton = litter_robot4_ns.class_(
-    "LitterRobot4PowerButton",
-    button.Button,
-    cg.Component,
-    cg.Parented.template(LitterRobot4Component),
-)
 LitterRobot4ResetButton = litter_robot4_ns.class_(
     "LitterRobot4ResetButton",
     button.Button,
@@ -69,7 +63,6 @@ CONFIG_SCHEMA = cv.typed_schema(
         "factory_reset": _button_schema(
             LitterRobot4FactoryResetButton, icon="mdi:cog-refresh"
         ),
-        "power": _button_schema(LitterRobot4PowerButton, icon="mdi:power"),
         "reset": _button_schema(LitterRobot4ResetButton, icon="mdi:reload"),
     }
 )
