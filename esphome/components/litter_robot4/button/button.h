@@ -32,12 +32,6 @@ class LitterRobot4FactoryResetButton : public button::Button, public Component, 
   void dump_config() override;
 };
 
-class LitterRobot4PowerButton : public button::Button, public Component, public Parented<LitterRobot4Component> {
- public:
-  void press_action() override { this->parent_->queue_register_write(REG_KEYPAD, CMD_KEYPAD_POWER); }
-  void dump_config() override;
-};
-
 class LitterRobot4ResetButton : public button::Button, public Component, public Parented<LitterRobot4Component> {
  public:
   void press_action() override { this->parent_->queue_register_write(REG_KEYPAD, CMD_KEYPAD_RESET); }

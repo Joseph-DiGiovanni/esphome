@@ -55,9 +55,6 @@ button:
     type: factory_reset
     name: "Factory Reset"
   - platform: litter_robot4
-    type: power
-    name: "Power"
-  - platform: litter_robot4
     type: reset
     name: "Reset"
 
@@ -95,6 +92,9 @@ switch:
   - platform: litter_robot4
     type: sleep_schedule_mon
     name: "Monday Sleep Schedule"
+  - platform: litter_robot4
+    type: power
+    name: "Power"
 
 datetime:
   - platform: litter_robot4

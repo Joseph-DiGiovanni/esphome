@@ -30,4 +30,13 @@ class LitterRobot4SleepDayEnabledSwitch : public switch_::Switch,
   DayOfWeek day_{DAY_SUN};
 };
 
+class LitterRobot4PowerSwitch : public switch_::Switch, public Component, public Parented<LitterRobot4Component> {
+ public:
+  void setup() override;
+  void dump_config() override;
+
+ protected:
+  void write_state(bool state) override;
+};
+
 }  // namespace esphome::litter_robot4

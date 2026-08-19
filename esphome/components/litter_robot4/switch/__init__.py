@@ -21,6 +21,12 @@ LitterRobot4SleepDayEnabledSwitch = litter_robot4_ns.class_(
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
+LitterRobot4PowerSwitch = litter_robot4_ns.class_(
+    "LitterRobot4PowerSwitch",
+    switch.Switch,
+    cg.Component,
+    cg.Parented.template(LitterRobot4Component),
+)
 
 DAY_TYPES = {
     "sleep_schedule_sun": "DAY_SUN",
@@ -66,10 +72,27 @@ def _day_switch_schema():
     )
 
 
+def _power_schema():
+    return (
+        switch.switch_schema(
+            LitterRobot4PowerSwitch,
+            icon="mdi:power",
+            default_restore_mode="DISABLED",
+        )
+        .extend(
+            {
+                cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
+            }
+        )
+        .extend(cv.COMPONENT_SCHEMA)
+    )
+
+
 CONFIG_SCHEMA = cv.typed_schema(
     {
         "control_panel_lockout": _lockout_schema(),
         **{key: _day_switch_schema() for key in DAY_TYPES},
+        "power": _power_schema(),
     }
 )
 

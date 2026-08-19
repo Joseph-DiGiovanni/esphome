@@ -37,4 +37,21 @@ void LitterRobot4SleepDayEnabledSwitch::dump_config() {
   LOG_SWITCH("", "Litter Robot 4 Sleep Schedule Day Enable", this);
 }
 
+void LitterRobot4PowerSwitch::setup() {
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
+    if (reg == REG_ROBOT_STATUS) {
+      this->publish_state(value != STATUS_POWERED_OFF);
+    }
+  });
+}
+
+void LitterRobot4PowerSwitch::write_state(bool state) {
+  if (state == this->state) {
+    return;
+  }
+  this->parent_->queue_register_write(REG_KEYPAD, CMD_KEYPAD_POWER);
+}
+
+void LitterRobot4PowerSwitch::dump_config() { LOG_SWITCH("", "Litter Robot 4 Power", this); }
+
 }  // namespace esphome::litter_robot4

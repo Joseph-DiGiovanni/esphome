@@ -13,8 +13,6 @@ void LitterRobot4ReplaceFilterButton::dump_config() { LOG_BUTTON("", "Litter Rob
 
 void LitterRobot4FactoryResetButton::dump_config() { LOG_BUTTON("", "Litter Robot 4 Factory Reset", this); }
 
-void LitterRobot4PowerButton::dump_config() { LOG_BUTTON("", "Litter Robot 4 Power", this); }
-
 void LitterRobot4ResetButton::dump_config() { LOG_BUTTON("", "Litter Robot 4 Reset", this); }
 
 }  // namespace esphome::litter_robot4
