@@ -67,6 +67,9 @@ void LitterRobot4StatusTextSensor::update_display_() {
   if (this->robot_status_ == STATUS_CAT_DETECTED && !this->laser_detected_ && !this->weight_detected_) {
     str = "Waiting to cycle";
   }
+  if (this->robot_status_ == STATUS_CLEAN_CYCLE && (this->laser_detected_ || this->weight_detected_)) {
+    str = "Cycle interrupted";
+  }
   this->publish_state(str);
 }
 
