@@ -16,7 +16,6 @@ class LitterRobot4StatusTextSensor : public text_sensor::TextSensor,
  protected:
   uint16_t robot_status_{0};
   uint16_t fault_code_{0};
-  bool waste_drawer_full_{false};
   bool on_battery_{false};
   bool wifi_disabled_{false};
   bool laser_detected_{false};
