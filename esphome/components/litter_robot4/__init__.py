@@ -25,6 +25,7 @@ LitterRobot4Component = litter_robot4_ns.class_(
 CONF_LITTER_ROBOT4_ID = "litter_robot4_id"
 CONF_CAT_WEIGHT_TOLERANCE = "cat_weight_tolerance"
 DEFAULT_CAT_WEIGHT_TOLERANCE = 0.6
+CONF_REDUCE_FALSE_DETECTIONS = "reduce_false_detections"
 
 CONFIG_SCHEMA = (
     cv.Schema(
@@ -34,6 +35,7 @@ CONFIG_SCHEMA = (
             cv.Optional(
                 CONF_CAT_WEIGHT_TOLERANCE, default=DEFAULT_CAT_WEIGHT_TOLERANCE
             ): cv.float_range(min=0.0, max=50.0),
+            cv.Optional(CONF_REDUCE_FALSE_DETECTIONS, default=False): cv.boolean,
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
@@ -52,6 +54,7 @@ async def to_code(config):
     if "wifi" in CORE.config:
         wifi.request_wifi_connect_state_listener()
     cg.add(var.set_cat_weight_tolerance(config[CONF_CAT_WEIGHT_TOLERANCE]))
+    cg.add(var.set_reduce_false_detections(config[CONF_REDUCE_FALSE_DETECTIONS]))
     cat_count = sum(
         1
         for number_conf in CORE.config.get("number", [])

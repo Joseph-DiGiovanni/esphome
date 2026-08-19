@@ -144,6 +144,12 @@ enum DayOfWeek : uint8_t {
   DAY_SAT,
 };
 
+enum FalseDetectionState : uint8_t {
+  FALSE_DETECTION_IDLE,
+  FALSE_DETECTION_MONITORING,
+  FALSE_DETECTION_CLEAR_PENDING,
+};
+
 // Distance from laser board down to surface of litter/globe in mm
 static const float LITTER_EMPTY_DISTANCE_MM = 480.0f;
 static const float LITTER_FULL_DISTANCE_MM = 435.0f;
@@ -184,6 +190,11 @@ class LitterRobot4Component final : public uart::UARTDevice,
   void queue_register_write(Register reg, uint16_t value) { this->push_queue_(OP_WRITE, reg, value); }
   void write_sleep_day_enabled(DayOfWeek day, bool enabled);
   void set_cat_weight_tolerance(float tolerance) { this->cat_weight_tolerance_ = tolerance; }
+  void set_reduce_false_detections(bool enabled) { this->reduce_false_detections_ = enabled; }
+  bool is_false_detection_suspect() const { return this->false_detection_state_ != FALSE_DETECTION_IDLE; }
+  uint16_t get_robot_status() const { return this->robot_status_; }
+  bool is_laser_detected() const { return this->laser_detected_; }
+  bool is_weight_detected() const { return this->weight_detected_; }
 #if LITTER_ROBOT4_MAX_TRACKED_CATS > 0
   void register_tracked_cat(LitterRobot4CatWeightNumber *sensor);
 #endif
@@ -206,6 +217,7 @@ class LitterRobot4Component final : public uart::UARTDevice,
   void push_queue_(Operation op, Register reg, uint16_t value);
   void pop_queue_();
   void check_timeouts_();
+  void handle_false_detection_();
 #if LITTER_ROBOT4_MAX_TRACKED_CATS > 0
   void handle_cat_weight_(uint16_t value);
 #endif
@@ -232,6 +244,12 @@ class LitterRobot4Component final : public uart::UARTDevice,
   float cat_weight_tolerance_{0.6f};
   uint16_t sleep_mask_{0};
   bool pic_ready_{false};
+  bool reduce_false_detections_{false};
+  uint16_t robot_status_{0};
+  bool laser_detected_{false};
+  bool weight_detected_{false};
+  bool was_cat_detected_{false};
+  FalseDetectionState false_detection_state_{FALSE_DETECTION_IDLE};
 #ifdef USE_WIFI
   WifiStatus last_wifi_status_{WifiStatus{0xFF}};
 #endif

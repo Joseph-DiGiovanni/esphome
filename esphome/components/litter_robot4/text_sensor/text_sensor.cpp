@@ -8,38 +8,20 @@ static const char *const TAG = "litter_robot4.text_sensor";
 void LitterRobot4StatusTextSensor::setup() {
   this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     switch (reg) {
-      case REG_ROBOT_STATUS:
-        this->robot_status_ = value;
-        break;
       case REG_FAULT_CODE:
         this->fault_code_ = value;
         break;
       case REG_POWER_TYPE:
         this->on_battery_ = value != 0;
         break;
-      case REG_DETECTION_EVENT:
-        switch (value) {
-          case DETECTION_EVENT_LASER_CLEAR:
-            this->laser_detected_ = false;
-            break;
-          case DETECTION_EVENT_LASER_DETECTED:
-            this->laser_detected_ = true;
-            break;
-          case DETECTION_EVENT_WEIGHT_CLEAR:
-            this->weight_detected_ = false;
-            break;
-          case DETECTION_EVENT_WEIGHT_DETECTED:
-            this->weight_detected_ = true;
-            break;
-          default:
-            return;
-        }
-        break;
 #ifdef USE_WIFI
       case REG_WIFI_STATUS:
         this->wifi_disabled_ = value == WIFI_OFF;
         break;
 #endif
+      case REG_ROBOT_STATUS:
+      case REG_DETECTION_EVENT:
+        break;
       default:
         return;
     }
@@ -60,14 +42,20 @@ void LitterRobot4StatusTextSensor::update_display_() {
     this->publish_state("Fault detected");
     return;
   }
-  auto *str = status_name(this->robot_status_);
+  uint16_t effective_status = this->parent_->get_robot_status();
+  if (effective_status == STATUS_CAT_DETECTED && this->parent_->is_false_detection_suspect()) {
+    effective_status = STATUS_READY;
+  }
+  auto *str = status_name(effective_status);
   if (str == nullptr) {
     return;
   }
-  if (this->robot_status_ == STATUS_CAT_DETECTED && !this->laser_detected_ && !this->weight_detected_) {
+  if (effective_status == STATUS_CAT_DETECTED && !this->parent_->is_laser_detected() &&
+      !this->parent_->is_weight_detected()) {
     str = "Waiting to cycle";
   }
-  if (this->robot_status_ == STATUS_CLEAN_CYCLE && (this->laser_detected_ || this->weight_detected_)) {
+  if (effective_status == STATUS_CLEAN_CYCLE &&
+      (this->parent_->is_laser_detected() || this->parent_->is_weight_detected())) {
     str = "Cycle interrupted";
   }
   this->publish_state(str);

@@ -142,6 +142,75 @@ void LitterRobot4Component::setup() {
   }
 #endif
 #endif
+
+  this->setup_on_register_update_callback([this](Register reg, uint16_t value) {
+    switch (reg) {
+      case REG_ROBOT_STATUS:
+        this->robot_status_ = value;
+        break;
+      case REG_DETECTION_EVENT:
+        switch (value) {
+          case DETECTION_EVENT_LASER_CLEAR:
+            this->laser_detected_ = false;
+            break;
+          case DETECTION_EVENT_LASER_DETECTED:
+            this->laser_detected_ = true;
+            break;
+          case DETECTION_EVENT_WEIGHT_CLEAR:
+            this->weight_detected_ = false;
+            break;
+          case DETECTION_EVENT_WEIGHT_DETECTED:
+            this->weight_detected_ = true;
+            break;
+          default:
+            return;
+        }
+        break;
+      default:
+        return;
+    }
+    if (this->reduce_false_detections_) {
+      this->handle_false_detection_();
+    }
+  });
+}
+
+void LitterRobot4Component::handle_false_detection_() {
+  bool cat_detected = this->robot_status_ == STATUS_CAT_DETECTED;
+
+  switch (this->false_detection_state_) {
+    case FALSE_DETECTION_IDLE:
+      if (cat_detected && !this->was_cat_detected_ && !(this->laser_detected_ && this->weight_detected_)) {
+        this->false_detection_state_ = FALSE_DETECTION_MONITORING;
+        ESP_LOGD(TAG, "Cat detected without both sensors; monitoring for false detection");
+      }
+      break;
+
+    case FALSE_DETECTION_MONITORING:
+      if (this->laser_detected_ && this->weight_detected_) {
+        this->false_detection_state_ = FALSE_DETECTION_IDLE;
+        ESP_LOGD(TAG, "Both sensors detected; false detection monitoring cancelled");
+      } else if (!this->laser_detected_ && !this->weight_detected_) {
+        this->false_detection_state_ = FALSE_DETECTION_CLEAR_PENDING;
+        this->set_timeout("false_detection_reset", 5000, [this] {
+          this->false_detection_state_ = FALSE_DETECTION_IDLE;
+          if (this->robot_status_ == STATUS_CAT_DETECTED) {
+            ESP_LOGD(TAG, "Sending reset for suspected false detection");
+            this->queue_register_write(REG_KEYPAD, CMD_KEYPAD_RESET);
+          }
+        });
+      }
+      break;
+
+    case FALSE_DETECTION_CLEAR_PENDING:
+      if (this->laser_detected_ || this->weight_detected_) {
+        this->cancel_timeout("false_detection_reset");
+        this->false_detection_state_ = FALSE_DETECTION_MONITORING;
+      }
+      break;
+  }
+
+  this->was_cat_detected_ = cat_detected;
 }
 
 void LitterRobot4Component::loop() {
@@ -173,6 +242,7 @@ void LitterRobot4Component::dump_config() {
 #if LITTER_ROBOT4_MAX_TRACKED_CATS > 0
   ESP_LOGCONFIG(TAG, "  Cat weight tolerance: %.1f lbs", this->cat_weight_tolerance_);
 #endif
+  ESP_LOGCONFIG(TAG, "  Reduce false detections: %s", YESNO(this->reduce_false_detections_));
 }
 
 static const char *reg_name(Register reg) {

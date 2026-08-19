@@ -1,6 +1,7 @@
 litter_robot4:
   id: my_litter_robot4
   cat_weight_tolerance: 1.0
+  reduce_false_detections: true
 
 text_sensor:
   - platform: litter_robot4
