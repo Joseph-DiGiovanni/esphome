@@ -1,5 +1,5 @@
 import esphome.codegen as cg
-from esphome.components import time, uart, wifi
+from esphome.components import time, uart
 import esphome.config_validation as cv
 from esphome.const import CONF_ID, CONF_TIME_ID, CONF_TYPE
 from esphome.core import CORE
@@ -49,8 +49,6 @@ async def to_code(config):
     if (time_id := config.get(CONF_TIME_ID)) is not None:
         time_ = await cg.get_variable(time_id)
         cg.add(var.set_time_id(time_))
-    if "wifi" in CORE.config:
-        wifi.request_wifi_connect_state_listener()
     cg.add(var.set_cat_weight_tolerance(config[CONF_CAT_WEIGHT_TOLERANCE]))
     cat_count = sum(
         1

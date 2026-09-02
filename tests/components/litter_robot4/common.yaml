@@ -81,6 +81,9 @@ select:
   - platform: litter_robot4
     type: panel_brightness
     name: "Panel Brightness"
+  - platform: litter_robot4
+    type: wifi_status
+    name: "WiFi Status"
 
 switch:
   - platform: litter_robot4

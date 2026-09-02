@@ -39,4 +39,15 @@ class LitterRobot4PanelBrightnessSelect : public select::Select,
   void control(size_t index) override;
 };
 
+class LitterRobot4WifiStatusSelect : public select::Select,
+                                     public Component,
+                                     public Parented<LitterRobot4Component> {
+ public:
+  void setup() override;
+  void dump_config() override;
+
+ protected:
+  void control(size_t index) override;
+};
+
 }  // namespace esphome::litter_robot4
