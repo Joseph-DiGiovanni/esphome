@@ -53,6 +53,18 @@ static uint16_t option_to_panel_brightness(const char *option) {
   return (100 << 8) | 90;
 }
 
+static uint16_t option_to_wifi_status(const char *option) {
+  if (strcmp(option, "Off") == 0)
+    return WIFI_OFF;
+  if (strcmp(option, "Pairing") == 0)
+    return WIFI_PAIRING;
+  if (strcmp(option, "Connecting") == 0)
+    return WIFI_CONNECTING;
+  if (strcmp(option, "Connected") == 0)
+    return WIFI_CONNECTED;
+  return WIFI_ERROR;
+}
+
 void LitterRobot4NightLightModeSelect::setup() {
   this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_NIGHT_LIGHT_MODE) {
@@ -114,5 +126,25 @@ void LitterRobot4PanelBrightnessSelect::control(size_t index) {
 }
 
 void LitterRobot4PanelBrightnessSelect::dump_config() { LOG_SELECT("", "Litter Robot 4 Panel Brightness", this); }
+
+void LitterRobot4WifiStatusSelect::setup() {
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
+    if (reg == REG_WIFI_STATUS) {
+      auto *opt = wifi_status_name(value);
+      if (opt != nullptr && this->has_option(opt)) {
+        auto idx = this->index_of(opt);
+        if (idx.has_value())
+          this->publish_state(*idx);
+      }
+    }
+  });
+}
+
+void LitterRobot4WifiStatusSelect::control(size_t index) {
+  uint16_t value = option_to_wifi_status(this->option_at(index));
+  this->parent_->queue_register_write(REG_WIFI_STATUS, value);
+}
+
+void LitterRobot4WifiStatusSelect::dump_config() { LOG_SELECT("", "Litter Robot 4 WiFi Status", this); }
 
 }  // namespace esphome::litter_robot4

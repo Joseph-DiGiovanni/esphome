@@ -35,11 +35,9 @@ void LitterRobot4StatusTextSensor::setup() {
             return;
         }
         break;
-#ifdef USE_WIFI
       case REG_WIFI_STATUS:
         this->wifi_disabled_ = value == WIFI_OFF;
         break;
-#endif
       default:
         return;
     }

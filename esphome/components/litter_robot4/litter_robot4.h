@@ -6,9 +6,6 @@
 #ifdef USE_TIME
 #include "esphome/components/time/real_time_clock.h"
 #endif
-#ifdef USE_WIFI
-#include "esphome/components/wifi/wifi_component.h"
-#endif
 
 #ifndef LITTER_ROBOT4_MAX_TRACKED_CATS
 static constexpr uint8_t LITTER_ROBOT4_MAX_TRACKED_CATS = 0;
@@ -102,7 +99,6 @@ enum RobotStatus : uint16_t {
   STATUS_CALIBRATING = 0x18,
 };
 
-#ifdef USE_WIFI
 enum WifiStatus : uint16_t {
   WIFI_OFF = 0x00,
   WIFI_PAIRING = 0x11,
@@ -110,7 +106,6 @@ enum WifiStatus : uint16_t {
   WIFI_CONNECTED = 0x22,
   WIFI_ERROR = 0x23,
 };
-#endif
 
 enum Command : uint16_t {
   CMD_EMPTY_LITTER = 0x000B,
@@ -160,6 +155,7 @@ struct StatusInfo {
 
 const char *register_name(Register reg);
 const char *status_name(uint16_t status);
+const char *wifi_status_name(uint16_t status);
 const char *format_register_value(Register reg, uint16_t value);
 
 struct PendingOperation {
@@ -170,13 +166,8 @@ struct PendingOperation {
 
 class LitterRobot4CatWeightNumber;
 
-class LitterRobot4Component final : public uart::UARTDevice,
-#ifdef USE_WIFI_CONNECT_STATE_LISTENERS
-                                    public wifi::WiFiConnectStateListener,
-#endif
-                                    public Component {
+class LitterRobot4Component final : public uart::UARTDevice, public Component {
  public:
-  void setup() override;
   void loop() override;
   void dump_config() override;
   void queue_register_read(Register reg) { this->push_queue_(OP_READ, reg, 0); }
@@ -208,13 +199,6 @@ class LitterRobot4Component final : public uart::UARTDevice,
   void check_timeouts_();
 #if LITTER_ROBOT4_MAX_TRACKED_CATS > 0
   void handle_cat_weight_(uint16_t value);
-#endif
-#ifdef USE_WIFI
-  WifiStatus current_wifi_status_();
-  void handle_wifi_status_(WifiStatus status);
-#ifdef USE_WIFI_CONNECT_STATE_LISTENERS
-  void on_wifi_connect_state(StringRef ssid, std::span<const uint8_t, 6> bssid) override;
-#endif
 #endif
 #ifdef USE_TIME
   void sync_time_();

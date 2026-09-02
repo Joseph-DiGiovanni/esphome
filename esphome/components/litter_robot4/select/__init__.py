@@ -25,11 +25,18 @@ LitterRobot4PanelBrightnessSelect = litter_robot4_ns.class_(
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
+LitterRobot4WifiStatusSelect = litter_robot4_ns.class_(
+    "LitterRobot4WifiStatusSelect",
+    select.Select,
+    cg.Component,
+    cg.Parented.template(LitterRobot4Component),
+)
 
 _SELECT_OPTIONS = {
     "night_light_mode": ["Off", "On", "Auto"],
     "night_light_brightness": ["Low", "Medium", "High"],
     "panel_brightness": ["Low", "Medium", "High"],
+    "wifi_status": ["Off", "Pairing", "Connecting", "Connected", "Error"],
 }
 
 
@@ -59,6 +66,7 @@ CONFIG_SCHEMA = cv.typed_schema(
         "panel_brightness": _select_schema(
             LitterRobot4PanelBrightnessSelect, icon="mdi:led-on"
         ),
+        "wifi_status": _select_schema(LitterRobot4WifiStatusSelect, icon="mdi:wifi"),
     }
 )
 
