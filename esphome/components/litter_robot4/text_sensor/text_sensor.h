@@ -12,15 +12,6 @@ class LitterRobot4StatusTextSensor : public text_sensor::TextSensor,
  public:
   void setup() override;
   void dump_config() override;
-
- protected:
-  uint16_t robot_status_{0};
-  uint16_t fault_code_{0};
-  bool on_battery_{false};
-  bool wifi_disabled_{false};
-  bool laser_detected_{false};
-  bool weight_detected_{false};
-  void update_display_();
 };
 
 class LitterRobot4PowerTypeTextSensor : public text_sensor::TextSensor,
