@@ -134,12 +134,6 @@ void LitterRobot4Component::loop() {
   }
 
   this->check_timeouts_();
-
-#ifdef USE_TIME
-  if (millis() - this->last_time_sync_ > SYNC_TIME_INTERVAL) {
-    this->sync_time_();
-  }
-#endif
 }
 
 void LitterRobot4Component::dump_config() {
@@ -442,12 +436,7 @@ void LitterRobot4Component::handle_frame_(Direction dir, Operation op, Register 
   if (!this->pic_ready_) {
     this->pic_ready_ = true;
     ESP_LOGD(TAG, "PIC Ready");
-    this->set_timeout("init_poll", 500, [this] {
-      this->poll_registers_();
-#ifdef USE_TIME
-      this->sync_time_();
-#endif
-    });
+    this->set_timeout("init_poll", 500, [this] { this->poll_registers_(); });
   }
 
   switch (op) {
@@ -562,8 +551,8 @@ void LitterRobot4Component::poll_registers_() {
   }
 }
 
+void LitterRobot4Component::sync_time() {
 #ifdef USE_TIME
-void LitterRobot4Component::sync_time_() {
   if (this->time_id_ == nullptr)
     return;
   auto now = this->time_id_->now();
@@ -578,11 +567,10 @@ void LitterRobot4Component::sync_time_() {
   this->queue_register_write(REG_TIME_MONTH, now.month);
   // Original firmware writes only last 2 digits of year.
   this->queue_register_write(REG_TIME_YEAR, now.year % 100);
-  this->last_time_sync_ = millis();
   ESP_LOGD(TAG, "Time synced: %04d-%02d-%02d %02d:%02d:%02d DOW=%d", now.year, now.month, now.day_of_month, now.hour,
            now.minute, now.second, now.day_of_week - 1);
-}
 #endif
+}
 
 #if LITTER_ROBOT4_MAX_TRACKED_CATS > 0
 void LitterRobot4Component::register_tracked_cat(LitterRobot4CatWeightNumber *sensor) {

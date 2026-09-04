@@ -39,9 +39,7 @@ class LitterRobot4PanelBrightnessSelect : public select::Select,
   void control(size_t index) override;
 };
 
-class LitterRobot4WifiStatusSelect : public select::Select,
-                                     public Component,
-                                     public Parented<LitterRobot4Component> {
+class LitterRobot4WifiStatusSelect : public select::Select, public Component, public Parented<LitterRobot4Component> {
  public:
   void setup() override;
   void dump_config() override;

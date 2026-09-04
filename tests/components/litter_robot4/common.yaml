@@ -2,6 +2,11 @@ litter_robot4:
   id: my_litter_robot4
   cat_weight_tolerance: 1.0
 
+interval:
+  - interval: 24h
+    then:
+      - litter_robot4.sync_time: my_litter_robot4
+
 text_sensor:
   - platform: litter_robot4
     type: status
