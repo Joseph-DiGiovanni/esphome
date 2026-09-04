@@ -18,8 +18,6 @@ static const uint8_t FRAME_TERMINATOR = 0xFF;
 static const uint8_t MAX_PENDING = 64;
 static const uint32_t PENDING_TIMEOUT = 50;
 
-static const uint32_t SYNC_TIME_INTERVAL = 86400000;
-
 enum Direction : uint8_t {
   DIR_FROM_PIC = 0x01,
   DIR_FROM_ESP = 0x02,
@@ -179,6 +177,7 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
   void register_tracked_cat(LitterRobot4CatWeightNumber *sensor);
 #endif
 
+  void sync_time();
 #ifdef USE_TIME
   void set_time_id(time::RealTimeClock *time_id) { this->time_id_ = time_id; }
 #endif
@@ -200,9 +199,6 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
 #if LITTER_ROBOT4_MAX_TRACKED_CATS > 0
   void handle_cat_weight_(uint16_t value);
 #endif
-#ifdef USE_TIME
-  void sync_time_();
-#endif
 
   uint8_t rx_buf_[FRAME_LENGTH];
   uint8_t rx_count_{0};
@@ -222,7 +218,6 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
 #ifdef USE_TIME
   time::RealTimeClock *time_id_{nullptr};
 #endif
-  uint32_t last_time_sync_{0};
 };
 
 }  // namespace esphome::litter_robot4

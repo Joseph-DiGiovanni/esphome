@@ -1,3 +1,5 @@
+from esphome import automation
+from esphome.automation import maybe_simple_id
 import esphome.codegen as cg
 from esphome.components import time, uart
 import esphome.config_validation as cv
@@ -21,6 +23,9 @@ litter_robot4_ns = cg.esphome_ns.namespace("litter_robot4")
 LitterRobot4Component = litter_robot4_ns.class_(
     "LitterRobot4Component", uart.UARTDevice, cg.Component
 )
+LitterRobot4SyncTimeAction = litter_robot4_ns.class_(
+    "LitterRobot4SyncTimeAction", automation.Action
+)
 
 CONF_LITTER_ROBOT4_ID = "litter_robot4_id"
 CONF_CAT_WEIGHT_TOLERANCE = "cat_weight_tolerance"
@@ -39,6 +44,22 @@ CONFIG_SCHEMA = (
     .extend(cv.COMPONENT_SCHEMA)
     .extend(uart.UART_DEVICE_SCHEMA)
 )
+
+
+@automation.register_action(
+    "litter_robot4.sync_time",
+    LitterRobot4SyncTimeAction,
+    maybe_simple_id(
+        {
+            cv.Required(CONF_ID): cv.use_id(LitterRobot4Component),
+        }
+    ),
+    synchronous=True,
+)
+async def litter_robot4_sync_time_to_code(config, action_id, template_arg, args):
+    var = cg.new_Pvariable(action_id, template_arg)
+    await cg.register_parented(var, config[CONF_ID])
+    return var
 
 
 async def to_code(config):
