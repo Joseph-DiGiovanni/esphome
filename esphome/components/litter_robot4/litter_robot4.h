@@ -133,10 +133,6 @@ enum DayOfWeek : uint8_t {
   DAY_SAT,
 };
 
-// Distance from laser board down to surface of litter/globe in mm
-static const float LITTER_EMPTY_DISTANCE_MM = 480.0f;
-static const float LITTER_FULL_DISTANCE_MM = 435.0f;
-
 struct RegisterInfo {
   Register reg;
   const char *name;

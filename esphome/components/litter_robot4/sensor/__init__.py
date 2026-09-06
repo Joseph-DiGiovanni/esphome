@@ -14,6 +14,9 @@ from .. import CONF_LITTER_ROBOT4_ID, LitterRobot4Component, litter_robot4_ns
 
 DEPENDENCIES = ["litter_robot4"]
 
+CONF_MIN_DISTANCE = "min_distance"
+CONF_MAX_DISTANCE = "max_distance"
+
 LitterRobot4WasteDrawerSensor = litter_robot4_ns.class_(
     "LitterRobot4WasteDrawerSensor",
     sensor.Sensor,
@@ -89,6 +92,11 @@ CONFIG_SCHEMA = cv.typed_schema(
         ),
         "litter_level": _sensor_schema(
             LitterRobot4LitterLevelSensor, unit=UNIT_PERCENT, icon="mdi:tray-full"
+        ).extend(
+            {
+                cv.Optional(CONF_MIN_DISTANCE, default=435.0): cv.positive_float,
+                cv.Optional(CONF_MAX_DISTANCE, default=480.0): cv.positive_float,
+            }
         ),
         "last_cat_weight": _sensor_schema(
             CatWeightSensor,
@@ -134,3 +142,6 @@ async def to_code(config):
         cg.add(
             var.set_register(cg.RawExpression(_ODOMETER_REGISTERS[config[CONF_TYPE]]))
         )
+    if config[CONF_TYPE] == "litter_level":
+        cg.add(var.set_min_distance(config[CONF_MIN_DISTANCE]))
+        cg.add(var.set_max_distance(config[CONF_MAX_DISTANCE]))
