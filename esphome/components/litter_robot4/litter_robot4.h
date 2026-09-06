@@ -31,6 +31,7 @@ enum Register : uint8_t {
   REG_KEYPAD = 0x01,
   REG_POWER_TYPE = 0x07,
   REG_CAT_WEIGHT = 0x09,
+  REG_LITTER_HOPPER = 0x0C,
   REG_TIME_DOW = 0x0F,
   REG_TIME_HOUR = 0x10,
   REG_TIME_MINUTE = 0x11,

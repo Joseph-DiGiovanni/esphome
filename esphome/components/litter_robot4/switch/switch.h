@@ -39,4 +39,15 @@ class LitterRobot4PowerSwitch : public switch_::Switch, public Component, public
   void write_state(bool state) override;
 };
 
+class LitterRobot4LitterHopperSwitch : public switch_::Switch,
+                                       public Component,
+                                       public Parented<LitterRobot4Component> {
+ public:
+  void setup() override;
+  void dump_config() override;
+
+ protected:
+  void write_state(bool state) override;
+};
+
 }  // namespace esphome::litter_robot4
