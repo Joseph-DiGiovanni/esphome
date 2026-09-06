@@ -18,9 +18,8 @@ void LitterRobot4WasteDrawerSensor::dump_config() { LOG_SENSOR("", "Litter Robot
 void LitterRobot4LitterLevelSensor::setup() {
   this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_LITTER_LEVEL_RAW) {
-      float pct = ((LITTER_EMPTY_DISTANCE_MM - static_cast<float>(value)) /
-                   (LITTER_EMPTY_DISTANCE_MM - LITTER_FULL_DISTANCE_MM)) *
-                  100.0f;
+      float pct =
+          ((this->max_distance_ - static_cast<float>(value)) / (this->max_distance_ - this->min_distance_)) * 100.0f;
       if (pct > 100.0f)
         pct = 100.0f;
       if (pct < 0.0f)
