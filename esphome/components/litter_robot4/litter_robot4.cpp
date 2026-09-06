@@ -444,6 +444,10 @@ void LitterRobot4Component::handle_frame_(Direction dir, Operation op, Register 
       ESP_LOGD(TAG, "Unknown operation 0x%02X", op);
       break;
   }
+
+  if (reg == REG_ROBOT_STATUS && value == STATUS_POWERING_ON) {
+    this->set_timeout("power_on_poll", 3000, [this] { this->poll_registers_(); });
+  }
 }
 
 void LitterRobot4Component::handle_write_(Register reg, uint16_t value) {
