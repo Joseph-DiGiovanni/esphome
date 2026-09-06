@@ -7,10 +7,6 @@
 #include "esphome/components/time/real_time_clock.h"
 #endif
 
-#ifndef LITTER_ROBOT4_MAX_TRACKED_CATS
-static constexpr uint8_t LITTER_ROBOT4_MAX_TRACKED_CATS = 0;
-#endif
-
 namespace esphome::litter_robot4 {
 
 static const uint8_t FRAME_LENGTH = 7;
@@ -162,8 +158,6 @@ struct PendingOperation {
   uint16_t value{0};
 };
 
-class LitterRobot4CatWeightNumber;
-
 class LitterRobot4Component final : public uart::UARTDevice, public Component {
  public:
   void loop() override;
@@ -172,10 +166,6 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
   void queue_register_read(Register reg, uint16_t value) { this->push_queue_(OP_READ, reg, value); }
   void queue_register_write(Register reg, uint16_t value) { this->push_queue_(OP_WRITE, reg, value); }
   void write_sleep_day_enabled(DayOfWeek day, bool enabled);
-  void set_cat_weight_tolerance(float tolerance) { this->cat_weight_tolerance_ = tolerance; }
-#if LITTER_ROBOT4_MAX_TRACKED_CATS > 0
-  void register_tracked_cat(LitterRobot4CatWeightNumber *sensor);
-#endif
 
   void sync_time();
 #ifdef USE_TIME
@@ -196,9 +186,6 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
   void push_queue_(Operation op, Register reg, uint16_t value);
   void pop_queue_();
   void check_timeouts_();
-#if LITTER_ROBOT4_MAX_TRACKED_CATS > 0
-  void handle_cat_weight_(uint16_t value);
-#endif
 
   uint8_t rx_buf_[FRAME_LENGTH];
   uint8_t rx_count_{0};
@@ -208,11 +195,7 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
   uint32_t pending_timestamp_{0};
 
   LazyCallbackManager<void(Register, uint16_t)> on_register_update_callback_;
-#if LITTER_ROBOT4_MAX_TRACKED_CATS > 0
-  StaticVector<LitterRobot4CatWeightNumber *, LITTER_ROBOT4_MAX_TRACKED_CATS> tracked_cat_sensors_;
-#endif
 
-  float cat_weight_tolerance_{0.6f};
   uint16_t sleep_mask_{0};
   bool pic_ready_{false};
 #ifdef USE_TIME
