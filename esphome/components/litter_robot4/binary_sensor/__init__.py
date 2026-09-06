@@ -48,6 +48,12 @@ LitterRobot4WeightDetectBinarySensor = litter_robot4_ns.class_(
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
+LitterRobot4HopperMotorBinarySensor = litter_robot4_ns.class_(
+    "LitterRobot4HopperMotorBinarySensor",
+    binary_sensor.BinarySensor,
+    cg.Component,
+    cg.Parented.template(LitterRobot4Component),
+)
 
 
 def _bs_schema(class_, *, icon=None, device_class=None):
@@ -95,6 +101,11 @@ CONFIG_SCHEMA = cv.typed_schema(
             LitterRobot4WeightDetectBinarySensor,
             icon="mdi:scale",
             device_class="motion",
+        ),
+        "hopper_motor": _bs_schema(
+            LitterRobot4HopperMotorBinarySensor,
+            icon="mdi:basket-fill",
+            device_class="running",
         ),
     }
 )

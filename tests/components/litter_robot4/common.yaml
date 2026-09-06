@@ -86,6 +86,9 @@ switch:
   - platform: litter_robot4
     type: power
     name: "Power"
+  - platform: litter_robot4
+    type: litter_hopper
+    name: "Hopper"
 
 datetime:
   - platform: litter_robot4
@@ -120,3 +123,6 @@ binary_sensor:
   - platform: litter_robot4
     type: weight_detect
     name: "Weight Detect"
+  - platform: litter_robot4
+    type: hopper_motor
+    name: "Hopper Motor"

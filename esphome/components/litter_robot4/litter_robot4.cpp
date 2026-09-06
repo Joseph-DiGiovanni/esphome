@@ -9,23 +9,47 @@ namespace esphome::litter_robot4 {
 
 static const char *const TAG = "litter_robot4";
 
-static const Register POLL_REGISTERS[] = {REG_POWER_TYPE,         REG_PANEL_LED,         REG_CLEAN_CYCLE_DELAY,
-                                          REG_PANEL_LOCKOUT,      REG_NIGHT_LIGHT_MODE,  REG_NIGHT_LIGHT_BRIGHTNESS,
-                                          REG_SLEEP_DAY_MASK,     REG_SLEEP_SUN,         REG_WAKE_SUN,
-                                          REG_SLEEP_MON,          REG_WAKE_MON,          REG_SLEEP_TUE,
-                                          REG_WAKE_TUE,           REG_SLEEP_WED,         REG_WAKE_WED,
-                                          REG_SLEEP_THU,          REG_WAKE_THU,          REG_SLEEP_FRI,
-                                          REG_WAKE_FRI,           REG_SLEEP_SAT,         REG_WAKE_SAT,
-                                          REG_WIFI_STATUS,        REG_ROBOT_STATUS,      REG_FAULT_CODE,
-                                          REG_SLEEP_STATUS,       REG_BONNET_REMOVED,    REG_NIGHT_LIGHT,
-                                          REG_POWER_CYCLE_COUNT,  REG_CLEAN_CYCLE_COUNT, REG_EMPTY_CYCLE_COUNT,
-                                          REG_FILTER_CYCLE_COUNT, REG_WASTE_DRAWER_PCT,  REG_WASTE_DRAWER_FULL,
+static const Register POLL_REGISTERS[] = {REG_POWER_TYPE,
+                                          REG_PANEL_LED,
+                                          REG_CLEAN_CYCLE_DELAY,
+                                          REG_LITTER_HOPPER,
+                                          REG_PANEL_LOCKOUT,
+                                          REG_NIGHT_LIGHT_MODE,
+                                          REG_NIGHT_LIGHT_BRIGHTNESS,
+                                          REG_SLEEP_DAY_MASK,
+                                          REG_SLEEP_SUN,
+                                          REG_WAKE_SUN,
+                                          REG_SLEEP_MON,
+                                          REG_WAKE_MON,
+                                          REG_SLEEP_TUE,
+                                          REG_WAKE_TUE,
+                                          REG_SLEEP_WED,
+                                          REG_WAKE_WED,
+                                          REG_SLEEP_THU,
+                                          REG_WAKE_THU,
+                                          REG_SLEEP_FRI,
+                                          REG_WAKE_FRI,
+                                          REG_SLEEP_SAT,
+                                          REG_WAKE_SAT,
+                                          REG_WIFI_STATUS,
+                                          REG_ROBOT_STATUS,
+                                          REG_FAULT_CODE,
+                                          REG_SLEEP_STATUS,
+                                          REG_BONNET_REMOVED,
+                                          REG_NIGHT_LIGHT,
+                                          REG_POWER_CYCLE_COUNT,
+                                          REG_CLEAN_CYCLE_COUNT,
+                                          REG_EMPTY_CYCLE_COUNT,
+                                          REG_FILTER_CYCLE_COUNT,
+                                          REG_WASTE_DRAWER_PCT,
+                                          REG_WASTE_DRAWER_FULL,
                                           REG_LITTER_LEVEL_RAW};
 
 static const RegisterInfo REGISTER_NAMES[] = {
     {REG_KEYPAD, "Keypad"},
     {REG_POWER_TYPE, "Power Type"},
     {REG_CAT_WEIGHT, "Cat Weight"},
+    {REG_LITTER_HOPPER, "LitterHopper"},
     {REG_TIME_DOW, "Time Day of Week"},
     {REG_TIME_HOUR, "Time Hour"},
     {REG_TIME_MINUTE, "Time Minute"},
@@ -209,6 +233,23 @@ const char *format_register_value(Register reg, uint16_t value) {
     case REG_SLEEP_STATUS:
     case REG_WASTE_DRAWER_FULL:
       return value != 0 ? on : off;
+
+    case REG_LITTER_HOPPER: {
+      switch (value) {
+        case 0x0000:
+          return off;
+        case 0x0001:
+        case 0x0020:
+          return on;
+        case 0x0114:
+          return "Dispense start";
+        case 0x2076:
+          return "Dispense complete";
+        case 0x0030:
+          return "Fault";
+      }
+      break;
+    }
 
     case REG_DETECTION_EVENT: {
       switch (value) {
