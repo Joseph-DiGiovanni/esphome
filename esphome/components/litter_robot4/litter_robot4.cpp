@@ -47,52 +47,52 @@ static const Register POLL_REGISTERS[] = {REG_POWER_TYPE,
 
 static const RegisterInfo REGISTER_NAMES[] = {
     {REG_KEYPAD, "Keypad"},
-    {REG_POWER_TYPE, "Power Type"},
-    {REG_CAT_WEIGHT, "Cat Weight"},
+    {REG_POWER_TYPE, "Power type"},
+    {REG_CAT_WEIGHT, "Cat weight"},
     {REG_LITTER_HOPPER, "LitterHopper"},
-    {REG_TIME_DOW, "Time Day of Week"},
-    {REG_TIME_HOUR, "Time Hour"},
-    {REG_TIME_MINUTE, "Time Minute"},
-    {REG_TIME_SECOND, "Time Second"},
-    {REG_TIME_DAY, "Time Day"},
-    {REG_TIME_MONTH, "Time Month"},
-    {REG_TIME_YEAR, "Time Year"},
+    {REG_TIME_DOW, "Time day of week"},
+    {REG_TIME_HOUR, "Time hour"},
+    {REG_TIME_MINUTE, "Time minute"},
+    {REG_TIME_SECOND, "Time second"},
+    {REG_TIME_DAY, "Time day"},
+    {REG_TIME_MONTH, "Time month"},
+    {REG_TIME_YEAR, "Time year"},
     {REG_PANEL_LED, "Panel LED"},
-    {REG_CLEAN_CYCLE_DELAY, "Clean Cycle Delay"},
-    {REG_PANEL_LOCKOUT, "Control Panel Lockout"},
-    {REG_NIGHT_LIGHT_MODE, "Night Light Mode"},
-    {REG_NIGHT_LIGHT_BRIGHTNESS, "Night Light Brightness"},
-    {REG_SLEEP_DAY_MASK, "Sleep Schedule Day Mask"},
-    {REG_SLEEP_SUN, "Sunday Sleep Time"},
-    {REG_WAKE_SUN, "Sunday Wake Time"},
-    {REG_SLEEP_MON, "Monday Sleep Time"},
-    {REG_WAKE_MON, "Monday Wake Time"},
-    {REG_SLEEP_TUE, "Tuesday Sleep Time"},
-    {REG_WAKE_TUE, "Tuesday Wake Time"},
-    {REG_SLEEP_WED, "Wednesday Sleep Time"},
-    {REG_WAKE_WED, "Wednesday Wake Time"},
-    {REG_SLEEP_THU, "Thursday Sleep Time"},
-    {REG_WAKE_THU, "Thursday Wake Time"},
-    {REG_SLEEP_FRI, "Friday Sleep Time"},
-    {REG_WAKE_FRI, "Friday Wake Time"},
-    {REG_SLEEP_SAT, "Saturday Sleep Time"},
-    {REG_WAKE_SAT, "Saturday Wake Time"},
-    {REG_FACTORY_RESET, "Factory Reset"},
+    {REG_CLEAN_CYCLE_DELAY, "Clean cycle delay"},
+    {REG_PANEL_LOCKOUT, "Control panel lockout"},
+    {REG_NIGHT_LIGHT_MODE, "Night light mode"},
+    {REG_NIGHT_LIGHT_BRIGHTNESS, "Night light brightness"},
+    {REG_SLEEP_DAY_MASK, "Sleep schedule day mask"},
+    {REG_SLEEP_SUN, "Sunday sleep time"},
+    {REG_WAKE_SUN, "Sunday wake time"},
+    {REG_SLEEP_MON, "Monday sleep time"},
+    {REG_WAKE_MON, "Monday wake time"},
+    {REG_SLEEP_TUE, "Tuesday sleep time"},
+    {REG_WAKE_TUE, "Tuesday wake time"},
+    {REG_SLEEP_WED, "Wednesday sleep time"},
+    {REG_WAKE_WED, "Wednesday wake time"},
+    {REG_SLEEP_THU, "Thursday sleep time"},
+    {REG_WAKE_THU, "Thursday wake time"},
+    {REG_SLEEP_FRI, "Friday sleep time"},
+    {REG_WAKE_FRI, "Friday wake time"},
+    {REG_SLEEP_SAT, "Saturday sleep time"},
+    {REG_WAKE_SAT, "Saturday wake time"},
+    {REG_FACTORY_RESET, "Factory reset"},
     {REG_HEARTBEAT, "Heartbeat"},
-    {REG_WIFI_STATUS, "WiFi Status"},
-    {REG_ROBOT_STATUS, "Robot Status"},
-    {REG_FAULT_CODE, "Fault Code"},
-    {REG_SLEEP_STATUS, "Sleep Status"},
-    {REG_DETECTION_EVENT, "Detection Event"},
-    {REG_BONNET_REMOVED, "Bonnet Removed"},
-    {REG_NIGHT_LIGHT, "Night Light"},
-    {REG_POWER_CYCLE_COUNT, "Power Cycle Count"},
-    {REG_CLEAN_CYCLE_COUNT, "Clean Cycle Count"},
-    {REG_EMPTY_CYCLE_COUNT, "Empty Cycle Count"},
-    {REG_FILTER_CYCLE_COUNT, "Filter Cycle Count"},
-    {REG_WASTE_DRAWER_PCT, "Waste Drawer Percent"},
-    {REG_WASTE_DRAWER_FULL, "Waste Drawer Full"},
-    {REG_LITTER_LEVEL_RAW, "Litter Level Raw Distance"},
+    {REG_WIFI_STATUS, "WiFi status"},
+    {REG_ROBOT_STATUS, "Robot status"},
+    {REG_FAULT_CODE, "Fault code"},
+    {REG_SLEEP_STATUS, "Sleep status"},
+    {REG_DETECTION_EVENT, "Detection event"},
+    {REG_BONNET_REMOVED, "Bonnet removed"},
+    {REG_NIGHT_LIGHT, "Night light"},
+    {REG_POWER_CYCLE_COUNT, "Power cycle count"},
+    {REG_CLEAN_CYCLE_COUNT, "Clean cycle count"},
+    {REG_EMPTY_CYCLE_COUNT, "Empty cycle count"},
+    {REG_FILTER_CYCLE_COUNT, "Filter cycle count"},
+    {REG_WASTE_DRAWER_PCT, "Waste drawer percent"},
+    {REG_WASTE_DRAWER_FULL, "Waste drawer full"},
+    {REG_LITTER_LEVEL_RAW, "Litter level raw distance"},
     {REG_LASER_1, "Laser Sensor 1"},
     {REG_LASER_2, "Laser Sensor 2"},
     {REG_LASER_3, "Laser Sensor 3"},
@@ -183,19 +183,19 @@ const char *format_register_value(Register reg, uint16_t value) {
       const char *cmd_name = nullptr;
       switch (value) {
         case CMD_KEYPAD_POWER:
-          cmd_name = "Power Pressed";
+          cmd_name = "Power pressed";
           break;
         case CMD_KEYPAD_RESET:
-          cmd_name = "Reset Pressed";
+          cmd_name = "Reset pressed";
           break;
         case CMD_KEYPAD_CYCLE:
-          cmd_name = "Cycle Pressed";
+          cmd_name = "Cycle pressed";
           break;
         case CMD_KEYPAD_EMPTY:
-          cmd_name = "Empty Pressed";
+          cmd_name = "Empty pressed";
           break;
         case CMD_KEYPAD_WIFI:
-          cmd_name = "Connect Pressed";
+          cmd_name = "Connect pressed";
           break;
       }
       if (cmd_name) {
