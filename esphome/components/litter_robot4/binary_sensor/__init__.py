@@ -30,12 +30,6 @@ LitterRobot4SleepingBinarySensor = litter_robot4_ns.class_(
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
-LitterRobot4FaultStatusBinarySensor = litter_robot4_ns.class_(
-    "LitterRobot4FaultStatusBinarySensor",
-    binary_sensor.BinarySensor,
-    cg.Component,
-    cg.Parented.template(LitterRobot4Component),
-)
 LitterRobot4LaserDetectBinarySensor = litter_robot4_ns.class_(
     "LitterRobot4LaserDetectBinarySensor",
     binary_sensor.BinarySensor,
@@ -85,11 +79,6 @@ CONFIG_SCHEMA = cv.typed_schema(
             LitterRobot4NightLightBinarySensor, icon="mdi:lightbulb-night"
         ),
         "sleeping": _bs_schema(LitterRobot4SleepingBinarySensor, icon="mdi:sleep"),
-        "fault_status": _bs_schema(
-            LitterRobot4FaultStatusBinarySensor,
-            icon="mdi:alert-octagon",
-            device_class="problem",
-        ),
         "laser_detect": _bs_schema(
             LitterRobot4LaserDetectBinarySensor,
             icon="mdi:signal-variant",

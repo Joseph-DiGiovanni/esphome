@@ -18,6 +18,12 @@ LitterRobot4PowerTypeTextSensor = litter_robot4_ns.class_(
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
+LitterRobot4FaultTextSensor = litter_robot4_ns.class_(
+    "LitterRobot4FaultTextSensor",
+    text_sensor.TextSensor,
+    cg.Component,
+    cg.Parented.template(LitterRobot4Component),
+)
 
 
 def _status_schema():
@@ -48,10 +54,25 @@ def _power_type_schema():
     )
 
 
+def _fault_schema():
+    return (
+        text_sensor.text_sensor_schema(
+            LitterRobot4FaultTextSensor, icon="mdi:alert-octagon"
+        )
+        .extend(
+            {
+                cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
+            }
+        )
+        .extend(cv.COMPONENT_SCHEMA)
+    )
+
+
 CONFIG_SCHEMA = cv.typed_schema(
     {
         "status": _status_schema(),
         "power_type": _power_type_schema(),
+        "fault": _fault_schema(),
     }
 )
 

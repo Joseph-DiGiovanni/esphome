@@ -22,4 +22,17 @@ class LitterRobot4PowerTypeTextSensor : public text_sensor::TextSensor,
   void dump_config() override;
 };
 
+class LitterRobot4FaultTextSensor : public text_sensor::TextSensor,
+                                    public Component,
+                                    public Parented<LitterRobot4Component> {
+ public:
+  void setup() override;
+  void dump_config() override;
+
+ protected:
+  void update_display_();
+  uint16_t fault_code_{0};
+  bool hopper_fault_{false};
+};
+
 }  // namespace esphome::litter_robot4
