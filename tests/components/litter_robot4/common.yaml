@@ -13,6 +13,9 @@ text_sensor:
   - platform: litter_robot4
     type: power_type
     name: "Power Type"
+  - platform: litter_robot4
+    type: fault
+    name: "Fault"
 
 sensor:
   - platform: litter_robot4
@@ -114,9 +117,6 @@ binary_sensor:
   - platform: litter_robot4
     type: sleeping
     name: "Sleeping"
-  - platform: litter_robot4
-    type: fault_status
-    name: "Fault Status"
   - platform: litter_robot4
     type: laser_detect
     name: "Laser Detect"

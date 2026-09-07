@@ -49,16 +49,6 @@ void LitterRobot4SleepingBinarySensor::setup() {
 
 void LitterRobot4SleepingBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Sleeping", this); }
 
-void LitterRobot4FaultStatusBinarySensor::setup() {
-  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
-    if (reg == REG_FAULT_CODE) {
-      this->publish_state(value != 0);
-    }
-  });
-}
-
-void LitterRobot4FaultStatusBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Fault Status", this); }
-
 void LitterRobot4LaserDetectBinarySensor::setup() {
   this->publish_initial_state(false);
   this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
