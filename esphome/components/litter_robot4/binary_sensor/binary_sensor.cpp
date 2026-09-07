@@ -39,15 +39,15 @@ void LitterRobot4NightLightBinarySensor::setup() {
 
 void LitterRobot4NightLightBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Night Light", this); }
 
-void LitterRobot4SleepStatusBinarySensor::setup() {
+void LitterRobot4SleepingBinarySensor::setup() {
   this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
-    if (reg == REG_SLEEP_STATUS) {
+    if (reg == REG_SLEEPING) {
       this->publish_state(value != 0);
     }
   });
 }
 
-void LitterRobot4SleepStatusBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Sleep Status", this); }
+void LitterRobot4SleepingBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Sleeping", this); }
 
 void LitterRobot4FaultStatusBinarySensor::setup() {
   this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {

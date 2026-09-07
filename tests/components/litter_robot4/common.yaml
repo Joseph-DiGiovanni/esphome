@@ -112,8 +112,8 @@ binary_sensor:
     type: night_light
     name: "Night Light"
   - platform: litter_robot4
-    type: sleep_status
-    name: "Sleep Status"
+    type: sleeping
+    name: "Sleeping"
   - platform: litter_robot4
     type: fault_status
     name: "Fault Status"

@@ -34,7 +34,7 @@ static const Register POLL_REGISTERS[] = {REG_POWER_TYPE,
                                           REG_WIFI_STATUS,
                                           REG_ROBOT_STATUS,
                                           REG_FAULT_CODE,
-                                          REG_SLEEP_STATUS,
+                                          REG_SLEEPING,
                                           REG_BONNET_REMOVED,
                                           REG_NIGHT_LIGHT,
                                           REG_POWER_CYCLE_COUNT,
@@ -82,7 +82,7 @@ static const RegisterInfo REGISTER_NAMES[] = {
     {REG_WIFI_STATUS, "WiFi status"},
     {REG_ROBOT_STATUS, "Robot status"},
     {REG_FAULT_CODE, "Fault code"},
-    {REG_SLEEP_STATUS, "Sleep status"},
+    {REG_SLEEPING, "Sleep state"},
     {REG_DETECTION_EVENT, "Detection event"},
     {REG_BONNET_REMOVED, "Bonnet removed"},
     {REG_NIGHT_LIGHT, "Night light"},
@@ -230,7 +230,7 @@ const char *format_register_value(Register reg, uint16_t value) {
     case REG_PANEL_LOCKOUT:
     case REG_BONNET_REMOVED:
     case REG_NIGHT_LIGHT:
-    case REG_SLEEP_STATUS:
+    case REG_SLEEPING:
     case REG_WASTE_DRAWER_FULL:
       return value != 0 ? on : off;
 
