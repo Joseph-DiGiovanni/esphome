@@ -30,9 +30,9 @@ class LitterRobot4NightLightBinarySensor : public binary_sensor::BinarySensor,
   void dump_config() override;
 };
 
-class LitterRobot4SleepStatusBinarySensor : public binary_sensor::BinarySensor,
-                                            public Component,
-                                            public Parented<LitterRobot4Component> {
+class LitterRobot4SleepingBinarySensor : public binary_sensor::BinarySensor,
+                                         public Component,
+                                         public Parented<LitterRobot4Component> {
  public:
   void setup() override;
   void dump_config() override;
