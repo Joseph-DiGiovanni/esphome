@@ -272,33 +272,23 @@ const char *format_register_value(Register reg, uint16_t value) {
       break;
     }
 
-    case REG_WASTE_DRAWER_PCT: {
+    case REG_WASTE_DRAWER_PCT:
+    case REG_DEBUG_LIGHT_LEVEL: {
       static char pct_buf[16];
       snprintf(pct_buf, sizeof(pct_buf), "%u%%", value);
       return pct_buf;
     }
 
-    case REG_LITTER_LEVEL_RAW: {
-      static char litter_buf[16];
-      snprintf(litter_buf, sizeof(litter_buf), "%u mm", value);
-      return litter_buf;
-    }
-
+    case REG_LITTER_LEVEL_RAW:
     case REG_LASER_LEFT:
     case REG_LASER_CENTER:
     case REG_LASER_RIGHT:
     case REG_DEBUG_LASER_LEFT:
     case REG_DEBUG_LASER_CENTER:
     case REG_DEBUG_LASER_RIGHT: {
-      static char laser_buf[16];
-      snprintf(laser_buf, sizeof(laser_buf), "%u mm", value);
-      return laser_buf;
-    }
-
-    case REG_DEBUG_LIGHT_LEVEL: {
-      static char light_buf[16];
-      snprintf(light_buf, sizeof(light_buf), "%u%%", value);
-      return light_buf;
+      static char mm_buf[16];
+      snprintf(mm_buf, sizeof(mm_buf), "%u mm", value);
+      return mm_buf;
     }
 
     case REG_DEBUG_WEIGHT: {
