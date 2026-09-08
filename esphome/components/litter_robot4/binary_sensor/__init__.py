@@ -46,7 +46,6 @@ def _bs_schema(class_, *, icon=None, device_class=None):
 
 _BOOL_REGISTERS = {
     "waste_drawer_full": "REG_WASTE_DRAWER_FULL",
-    "bonnet_removed": "REG_BONNET_REMOVED",
     "night_light": "REG_NIGHT_LIGHT",
     "sleeping": "REG_SLEEPING",
 }
@@ -56,8 +55,8 @@ CONFIG_SCHEMA = cv.typed_schema(
         "waste_drawer_full": _bs_schema(
             LitterRobot4BoolBinarySensor, icon="mdi:inbox-full"
         ),
-        "bonnet_removed": _bs_schema(
-            LitterRobot4BoolBinarySensor, icon="mdi:alert-circle"
+        "bonnet": _bs_schema(
+            LitterRobot4BoolBinarySensor, icon="mdi:circle-off-outline"
         ),
         "night_light": _bs_schema(
             LitterRobot4BoolBinarySensor, icon="mdi:lightbulb-night"
@@ -89,5 +88,8 @@ async def to_code(config):
     await cg.register_parented(var, parent)
     if config[CONF_TYPE] in _BOOL_REGISTERS:
         cg.add(var.set_register(cg.RawExpression(_BOOL_REGISTERS[config[CONF_TYPE]])))
+    if config[CONF_TYPE] == "bonnet":
+        cg.add(var.set_register(cg.RawExpression("REG_BONNET_REMOVED")))
+        cg.add(var.set_invert(True))
     if config[CONF_TYPE] == "weight_detect":
         cg.add(var.set_weight(True))

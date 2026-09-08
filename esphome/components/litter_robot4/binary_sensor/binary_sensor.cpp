@@ -8,7 +8,7 @@ static const char *const TAG = "litter_robot4.binary_sensor";
 void LitterRobot4BoolBinarySensor::setup() {
   this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == this->register_) {
-      this->publish_state(value != 0);
+      this->publish_state((value != 0) != this->invert_);
     }
   });
 }
