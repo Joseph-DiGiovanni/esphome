@@ -35,23 +35,19 @@ CatWeightSensor = litter_robot4_ns.class_(
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
-CleanCycleCountSensor = litter_robot4_ns.class_(
-    "LitterRobot4CleanCycleCountSensor",
-    sensor.Sensor,
-    cg.Component,
-    cg.Parented.template(LitterRobot4Component),
-)
-OdometerSensor = litter_robot4_ns.class_(
-    "LitterRobot4OdometerSensor",
+RegisterSensor = litter_robot4_ns.class_(
+    "LitterRobot4RegisterSensor",
     sensor.Sensor,
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
 
-_ODOMETER_REGISTERS = {
+_REGISTER_REGISTERS = {
+    "clean_cycle_count": "REG_CLEAN_CYCLE_COUNT",
     "power_cycle_count": "REG_POWER_CYCLE_COUNT",
     "empty_cycle_count": "REG_EMPTY_CYCLE_COUNT",
     "filter_cycle_count": "REG_FILTER_CYCLE_COUNT",
+    "calibrated_litter_level": "REG_CALIBRATED_LITTER_LEVEL_RAW",
 }
 
 
@@ -106,25 +102,25 @@ CONFIG_SCHEMA = cv.typed_schema(
             icon="mdi:weight",
         ),
         "clean_cycle_count": _sensor_schema(
-            CleanCycleCountSensor,
+            RegisterSensor,
             acc_decimals=0,
             state_class=STATE_CLASS_TOTAL_INCREASING,
             icon="mdi:counter",
         ),
         "power_cycle_count": _sensor_schema(
-            OdometerSensor,
+            RegisterSensor,
             acc_decimals=0,
             state_class=STATE_CLASS_TOTAL_INCREASING,
             icon="mdi:power-cycle",
         ),
         "empty_cycle_count": _sensor_schema(
-            OdometerSensor,
+            RegisterSensor,
             acc_decimals=0,
             state_class=STATE_CLASS_TOTAL_INCREASING,
             icon="mdi:delete-outline",
         ),
         "filter_cycle_count": _sensor_schema(
-            OdometerSensor,
+            RegisterSensor,
             acc_decimals=0,
             state_class=STATE_CLASS_TOTAL_INCREASING,
             icon="mdi:air-filter",
@@ -138,9 +134,9 @@ async def to_code(config):
     var = await sensor.new_sensor(config)
     await cg.register_component(var, config)
     await cg.register_parented(var, parent)
-    if config[CONF_TYPE] in _ODOMETER_REGISTERS:
+    if config[CONF_TYPE] in _REGISTER_REGISTERS:
         cg.add(
-            var.set_register(cg.RawExpression(_ODOMETER_REGISTERS[config[CONF_TYPE]]))
+            var.set_register(cg.RawExpression(_REGISTER_REGISTERS[config[CONF_TYPE]]))
         )
     if config[CONF_TYPE] == "litter_level":
         cg.add(var.set_min_distance(config[CONF_MIN_DISTANCE]))
