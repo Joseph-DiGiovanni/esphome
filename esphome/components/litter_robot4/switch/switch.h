@@ -6,15 +6,15 @@
 
 namespace esphome::litter_robot4 {
 
-class LitterRobot4ControlPanelLockoutSwitch : public switch_::Switch,
-                                              public Component,
-                                              public Parented<LitterRobot4Component> {
+class LitterRobot4BoolSwitch : public switch_::Switch, public Component, public Parented<LitterRobot4Component> {
  public:
   void setup() override;
   void dump_config() override;
+  void set_register(Register reg) { this->register_ = reg; }
 
  protected:
   void write_state(bool state) override;
+  Register register_{};
 };
 
 class LitterRobot4SleepDayEnabledSwitch : public switch_::Switch,
@@ -31,26 +31,6 @@ class LitterRobot4SleepDayEnabledSwitch : public switch_::Switch,
 };
 
 class LitterRobot4PowerSwitch : public switch_::Switch, public Component, public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
-
- protected:
-  void write_state(bool state) override;
-};
-
-class LitterRobot4LitterHopperSwitch : public switch_::Switch,
-                                       public Component,
-                                       public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
-
- protected:
-  void write_state(bool state) override;
-};
-
-class LitterRobot4DebugSwitch : public switch_::Switch, public Component, public Parented<LitterRobot4Component> {
  public:
   void setup() override;
   void dump_config() override;

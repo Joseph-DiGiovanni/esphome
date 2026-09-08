@@ -9,8 +9,8 @@ DEPENDENCIES = ["litter_robot4"]
 
 ICON_LOCK = "mdi:lock"
 
-LitterRobot4ControlPanelLockoutSwitch = litter_robot4_ns.class_(
-    "LitterRobot4ControlPanelLockoutSwitch",
+LitterRobot4BoolSwitch = litter_robot4_ns.class_(
+    "LitterRobot4BoolSwitch",
     switch.Switch,
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
@@ -27,18 +27,11 @@ LitterRobot4PowerSwitch = litter_robot4_ns.class_(
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
-LitterRobot4LitterHopperSwitch = litter_robot4_ns.class_(
-    "LitterRobot4LitterHopperSwitch",
-    switch.Switch,
-    cg.Component,
-    cg.Parented.template(LitterRobot4Component),
-)
-LitterRobot4DebugSwitch = litter_robot4_ns.class_(
-    "LitterRobot4DebugSwitch",
-    switch.Switch,
-    cg.Component,
-    cg.Parented.template(LitterRobot4Component),
-)
+_BOOL_REGISTERS = {
+    "control_panel_lockout": "REG_PANEL_LOCKOUT",
+    "litter_hopper": "REG_LITTER_HOPPER",
+    "debug_mode": "REG_DEBUG",
+}
 
 DAY_TYPES = {
     "sleep_schedule_sun": "DAY_SUN",
@@ -54,7 +47,7 @@ DAY_TYPES = {
 def _lockout_schema():
     return (
         switch.switch_schema(
-            LitterRobot4ControlPanelLockoutSwitch,
+            LitterRobot4BoolSwitch,
             icon=ICON_LOCK,
             entity_category=ENTITY_CATEGORY_CONFIG,
             default_restore_mode="DISABLED",
@@ -103,7 +96,7 @@ def _power_schema():
 def _litter_hopper_schema():
     return (
         switch.switch_schema(
-            LitterRobot4LitterHopperSwitch,
+            LitterRobot4BoolSwitch,
             icon="mdi:cup",
             entity_category=ENTITY_CATEGORY_CONFIG,
             default_restore_mode="DISABLED",
@@ -120,7 +113,7 @@ def _litter_hopper_schema():
 def _debug_schema():
     return (
         switch.switch_schema(
-            LitterRobot4DebugSwitch,
+            LitterRobot4BoolSwitch,
             icon="mdi:bug",
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
             default_restore_mode="DISABLED",
@@ -152,3 +145,5 @@ async def to_code(config):
     await cg.register_parented(var, parent)
     if config[CONF_TYPE] in DAY_TYPES:
         cg.add(var.set_day(cg.RawExpression(DAY_TYPES[config[CONF_TYPE]])))
+    if config[CONF_TYPE] in _BOOL_REGISTERS:
+        cg.add(var.set_register(cg.RawExpression(_BOOL_REGISTERS[config[CONF_TYPE]])))
