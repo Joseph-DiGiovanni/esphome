@@ -41,17 +41,7 @@ void LitterRobot4CatWeightSensor::setup() {
 
 void LitterRobot4CatWeightSensor::dump_config() { LOG_SENSOR("", "Litter Robot 4 Cat Weight", this); }
 
-void LitterRobot4CleanCycleCountSensor::setup() {
-  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
-    if (reg == REG_CLEAN_CYCLE_COUNT) {
-      this->publish_state(value);
-    }
-  });
-}
-
-void LitterRobot4CleanCycleCountSensor::dump_config() { LOG_SENSOR("", "Litter Robot 4 Clean Cycle Count", this); }
-
-void LitterRobot4OdometerSensor::setup() {
+void LitterRobot4RegisterSensor::setup() {
   this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == this->register_) {
       this->publish_state(value);
@@ -59,7 +49,7 @@ void LitterRobot4OdometerSensor::setup() {
   });
 }
 
-void LitterRobot4OdometerSensor::dump_config() {
+void LitterRobot4RegisterSensor::dump_config() {
   auto *name = register_name(this->register_);
   if (name) {
     LOG_SENSOR("", name, this);
