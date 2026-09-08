@@ -12,7 +12,7 @@ namespace esphome::litter_robot4 {
 static const uint8_t FRAME_LENGTH = 7;
 static const uint8_t FRAME_TERMINATOR = 0xFF;
 static const uint8_t MAX_PENDING = 64;
-static const uint32_t PENDING_TIMEOUT = 50;
+static const uint32_t PENDING_TIMEOUT = 100;
 
 enum Direction : uint8_t {
   DIR_FROM_PIC = 0x01,
