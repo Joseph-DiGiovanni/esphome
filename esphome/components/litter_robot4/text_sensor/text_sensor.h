@@ -33,6 +33,7 @@ class LitterRobot4FaultTextSensor : public text_sensor::TextSensor,
   void update_display_();
   uint16_t fault_code_{0};
   bool hopper_fault_{false};
+  bool bonnet_fault_{false};
 };
 
 }  // namespace esphome::litter_robot4
