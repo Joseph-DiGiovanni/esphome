@@ -68,4 +68,16 @@ void LitterRobot4LitterHopperSwitch::write_state(bool state) {
 
 void LitterRobot4LitterHopperSwitch::dump_config() { LOG_SWITCH("", "Litter Robot 4 LitterHopper", this); }
 
+void LitterRobot4DebugSwitch::setup() {
+  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
+    if (reg == REG_DEBUG) {
+      this->publish_state(value != 0);
+    }
+  });
+}
+
+void LitterRobot4DebugSwitch::write_state(bool state) { this->parent_->queue_register_write(REG_DEBUG, state ? 1 : 0); }
+
+void LitterRobot4DebugSwitch::dump_config() { LOG_SWITCH("", "Litter Robot 4 Debug Mode", this); }
+
 }  // namespace esphome::litter_robot4

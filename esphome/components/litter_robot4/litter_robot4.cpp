@@ -9,7 +9,8 @@ namespace esphome::litter_robot4 {
 
 static const char *const TAG = "litter_robot4";
 
-static const Register POLL_REGISTERS[] = {REG_POWER_TYPE,
+static const Register POLL_REGISTERS[] = {REG_DEBUG,
+                                          REG_POWER_TYPE,
                                           REG_PANEL_LED,
                                           REG_CLEAN_CYCLE_DELAY,
                                           REG_LITTER_HOPPER,
@@ -47,6 +48,7 @@ static const Register POLL_REGISTERS[] = {REG_POWER_TYPE,
 
 static const RegisterInfo REGISTER_NAMES[] = {
     {REG_KEYPAD, "Keypad"},
+    {REG_DEBUG, "Debug"},
     {REG_POWER_TYPE, "Power type"},
     {REG_CAT_WEIGHT, "Cat weight"},
     {REG_LITTER_HOPPER, "LitterHopper"},
