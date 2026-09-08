@@ -45,28 +45,4 @@ void LitterRobot4DetectionBinarySensor::dump_config() {
   LOG_BINARY_SENSOR("", this->weight_ ? "Litter Robot 4 Weight Detect" : "Litter Robot 4 Laser Detect", this);
 }
 
-void LitterRobot4HopperMotorBinarySensor::setup() {
-  this->publish_initial_state(false);
-  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
-    if (reg != REG_LITTER_HOPPER)
-      return;
-    switch (value) {
-      case 0x0114:
-        this->publish_state(true);
-        break;
-      case 0x0000:
-      case 0x2076:
-      case 0x0030:
-        this->publish_state(false);
-        break;
-      default:
-        break;
-    }
-  });
-}
-
-void LitterRobot4HopperMotorBinarySensor::dump_config() {
-  LOG_BINARY_SENSOR("", "Litter Robot 4 LitterHopper Motor", this);
-}
-
 }  // namespace esphome::litter_robot4
