@@ -33,7 +33,7 @@ CONFIG_SCHEMA = cv.typed_schema(
             LitterRobot4CycleDelayNumber,
             unit_of_measurement=UNIT_MINUTE,
             entity_category=ENTITY_CATEGORY_CONFIG,
-            icon="mdi:timer-sync-outline",
+            icon="mdi:timer-sync",
         ),
     }
 )

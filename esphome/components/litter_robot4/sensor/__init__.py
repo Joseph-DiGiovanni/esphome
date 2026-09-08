@@ -117,7 +117,7 @@ CONFIG_SCHEMA = cv.typed_schema(
             RegisterSensor,
             acc_decimals=0,
             state_class=STATE_CLASS_TOTAL_INCREASING,
-            icon="mdi:delete-outline",
+            icon="mdi:trash-can",
         ),
         "filter_cycle_count": _sensor_schema(
             RegisterSensor,

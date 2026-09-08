@@ -29,7 +29,7 @@ LitterRobot4FaultTextSensor = litter_robot4_ns.class_(
 def _status_schema():
     return (
         text_sensor.text_sensor_schema(
-            LitterRobot4StatusTextSensor, icon="mdi:information-outline"
+            LitterRobot4StatusTextSensor, icon="mdi:information"
         )
         .extend(
             {
