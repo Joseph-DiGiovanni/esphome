@@ -41,7 +41,7 @@ def _button_schema(class_, *, icon=None):
 CONFIG_SCHEMA = cv.typed_schema(
     {
         "cycle": _button_schema(LitterRobot4CommandButton, icon="mdi:restore"),
-        "empty": _button_schema(LitterRobot4CommandButton, icon="mdi:delete-outline"),
+        "empty": _button_schema(LitterRobot4CommandButton, icon="mdi:trash-can"),
         "replace_filter": _button_schema(
             LitterRobot4CommandButton, icon="mdi:air-filter"
         ),

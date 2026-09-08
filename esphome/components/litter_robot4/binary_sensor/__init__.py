@@ -64,7 +64,7 @@ CONFIG_SCHEMA = cv.typed_schema(
         "sleeping": _bs_schema(LitterRobot4BoolBinarySensor, icon="mdi:sleep"),
         "laser_detect": _bs_schema(
             LitterRobot4DetectionBinarySensor,
-            icon="mdi:signal-variant",
+            icon="mdi:contactless-payment-circle",
             device_class="motion",
         ),
         "weight_detect": _bs_schema(
