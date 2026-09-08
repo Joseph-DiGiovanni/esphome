@@ -1,41 +1,26 @@
 import esphome.codegen as cg
 from esphome.components import button
 import esphome.config_validation as cv
+from esphome.const import CONF_TYPE
 
 from .. import CONF_LITTER_ROBOT4_ID, LitterRobot4Component, litter_robot4_ns
 
 DEPENDENCIES = ["litter_robot4"]
 
-LitterRobot4CycleButton = litter_robot4_ns.class_(
-    "LitterRobot4CycleButton",
+LitterRobot4CommandButton = litter_robot4_ns.class_(
+    "LitterRobot4CommandButton",
     button.Button,
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
-LitterRobot4EmptyButton = litter_robot4_ns.class_(
-    "LitterRobot4EmptyButton",
-    button.Button,
-    cg.Component,
-    cg.Parented.template(LitterRobot4Component),
-)
-LitterRobot4ReplaceFilterButton = litter_robot4_ns.class_(
-    "LitterRobot4ReplaceFilterButton",
-    button.Button,
-    cg.Component,
-    cg.Parented.template(LitterRobot4Component),
-)
-LitterRobot4FactoryResetButton = litter_robot4_ns.class_(
-    "LitterRobot4FactoryResetButton",
-    button.Button,
-    cg.Component,
-    cg.Parented.template(LitterRobot4Component),
-)
-LitterRobot4ResetButton = litter_robot4_ns.class_(
-    "LitterRobot4ResetButton",
-    button.Button,
-    cg.Component,
-    cg.Parented.template(LitterRobot4Component),
-)
+
+_COMMANDS = {
+    "cycle": ("REG_ROBOT_STATUS", "CMD_START_CLEAN"),
+    "empty": ("REG_ROBOT_STATUS", "CMD_EMPTY_LITTER"),
+    "replace_filter": ("REG_ROBOT_STATUS", "CMD_REPLACE_FILTER"),
+    "factory_reset": ("REG_FACTORY_RESET", "CMD_FACTORY_RESET"),
+    "reset": ("REG_KEYPAD", "CMD_KEYPAD_RESET"),
+}
 
 
 def _button_schema(class_, *, icon=None):
@@ -55,15 +40,15 @@ def _button_schema(class_, *, icon=None):
 
 CONFIG_SCHEMA = cv.typed_schema(
     {
-        "cycle": _button_schema(LitterRobot4CycleButton, icon="mdi:restore"),
-        "empty": _button_schema(LitterRobot4EmptyButton, icon="mdi:delete-outline"),
+        "cycle": _button_schema(LitterRobot4CommandButton, icon="mdi:restore"),
+        "empty": _button_schema(LitterRobot4CommandButton, icon="mdi:delete-outline"),
         "replace_filter": _button_schema(
-            LitterRobot4ReplaceFilterButton, icon="mdi:air-filter"
+            LitterRobot4CommandButton, icon="mdi:air-filter"
         ),
         "factory_reset": _button_schema(
-            LitterRobot4FactoryResetButton, icon="mdi:cog-refresh"
+            LitterRobot4CommandButton, icon="mdi:cog-refresh"
         ),
-        "reset": _button_schema(LitterRobot4ResetButton, icon="mdi:reload"),
+        "reset": _button_schema(LitterRobot4CommandButton, icon="mdi:reload"),
     }
 )
 
@@ -73,3 +58,6 @@ async def to_code(config):
     var = await button.new_button(config)
     await cg.register_component(var, config)
     await cg.register_parented(var, parent)
+    reg, cmd = _COMMANDS[config[CONF_TYPE]]
+    cg.add(var.set_register(cg.RawExpression(reg)))
+    cg.add(var.set_command(cg.RawExpression(cmd)))
