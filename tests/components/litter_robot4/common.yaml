@@ -25,6 +25,9 @@ sensor:
     type: litter_level
     name: "Litter Level"
   - platform: litter_robot4
+    type: litter_level_distance
+    name: "Litter Level Distance"
+  - platform: litter_robot4
     type: last_cat_weight
     name: "Cat Weight"
   - platform: litter_robot4
