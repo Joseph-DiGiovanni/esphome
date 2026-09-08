@@ -245,17 +245,19 @@ const char *format_register_value(Register reg, uint16_t value) {
 
     case REG_LITTER_HOPPER: {
       switch (value) {
-        case 0x0000:
+        case LITTER_HOPPER_DISABLED:
           return off;
-        case 0x0001:
-        case 0x0020:
+        case LITTER_HOPPER_ENABLE_CMD:
+        case LITTER_HOPPER_ENABLED:
           return on;
-        case 0x0114:
+        case LITTER_HOPPER_MOTOR_START:
           return "Dispense start";
-        case 0x2076:
-          return "Dispense complete";
-        case 0x0030:
+        case LITTER_HOPPER_NOT_CONNECTED:
           return "Fault";
+        default:
+          if ((value >> 8) == LITTER_HOPPER_STOPPED_HIGH) {
+            return "Dispense complete";
+          }
       }
       break;
     }
