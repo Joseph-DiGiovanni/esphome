@@ -35,6 +35,9 @@ void LitterRobot4FaultTextSensor::setup() {
     } else if (reg == REG_LITTER_HOPPER) {
       this->hopper_fault_ = value == 0x0030;
       this->update_display_();
+    } else if (reg == REG_BONNET_REMOVED) {
+      this->bonnet_fault_ = value != 0;
+      this->update_display_();
     }
   });
 }
@@ -44,6 +47,10 @@ void LitterRobot4FaultTextSensor::update_display_() {
 
   if (this->hopper_fault_) {
     state = "Hopper not detected";
+  }
+
+  if (this->bonnet_fault_) {
+    state = "Bonnet removed";
   }
 
   if (this->fault_code_ != 0) {
