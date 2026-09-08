@@ -98,6 +98,7 @@ static const RegisterInfo REGISTER_NAMES[] = {
     {REG_LASER_LEFT, "Laser sensor left"},
     {REG_LASER_CENTER, "Laser sensor center"},
     {REG_LASER_RIGHT, "Laser sensor right"},
+    {REG_CALIBRATED_LITTER_LEVEL_RAW, "Calibrated litter level raw distance"},
     {REG_DEBUG_LIGHT_LEVEL, "Light level"},
     {REG_DEBUG_WEIGHT, "Weight"},
     {REG_DEBUG_LASER_LEFT, "Laser sensor left"},
@@ -280,6 +281,7 @@ const char *format_register_value(Register reg, uint16_t value) {
     }
 
     case REG_LITTER_LEVEL_RAW:
+    case REG_CALIBRATED_LITTER_LEVEL_RAW:
     case REG_LASER_LEFT:
     case REG_LASER_CENTER:
     case REG_LASER_RIGHT:
