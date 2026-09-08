@@ -5,20 +5,23 @@ namespace esphome::litter_robot4 {
 
 static const char *const TAG = "litter_robot4.switch";
 
-void LitterRobot4ControlPanelLockoutSwitch::setup() {
+void LitterRobot4BoolSwitch::setup() {
   this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
-    if (reg == REG_PANEL_LOCKOUT) {
+    if (reg == this->register_) {
       this->publish_state(value != 0);
     }
   });
 }
 
-void LitterRobot4ControlPanelLockoutSwitch::write_state(bool state) {
-  this->parent_->queue_register_write(REG_PANEL_LOCKOUT, state ? 1 : 0);
+void LitterRobot4BoolSwitch::write_state(bool state) {
+  this->parent_->queue_register_write(this->register_, state ? 1 : 0);
 }
 
-void LitterRobot4ControlPanelLockoutSwitch::dump_config() {
-  LOG_SWITCH("", "Litter Robot 4 Control Panel Lockout", this);
+void LitterRobot4BoolSwitch::dump_config() {
+  auto *name = register_name(this->register_);
+  if (name) {
+    LOG_SWITCH("", name, this);
+  }
 }
 
 void LitterRobot4SleepDayEnabledSwitch::setup() {
@@ -53,31 +56,5 @@ void LitterRobot4PowerSwitch::write_state(bool state) {
 }
 
 void LitterRobot4PowerSwitch::dump_config() { LOG_SWITCH("", "Litter Robot 4 Power", this); }
-
-void LitterRobot4LitterHopperSwitch::setup() {
-  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
-    if (reg == REG_LITTER_HOPPER) {
-      this->publish_state(value != 0);
-    }
-  });
-}
-
-void LitterRobot4LitterHopperSwitch::write_state(bool state) {
-  this->parent_->queue_register_write(REG_LITTER_HOPPER, state ? 1 : 0);
-}
-
-void LitterRobot4LitterHopperSwitch::dump_config() { LOG_SWITCH("", "Litter Robot 4 LitterHopper", this); }
-
-void LitterRobot4DebugSwitch::setup() {
-  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
-    if (reg == REG_DEBUG) {
-      this->publish_state(value != 0);
-    }
-  });
-}
-
-void LitterRobot4DebugSwitch::write_state(bool state) { this->parent_->queue_register_write(REG_DEBUG, state ? 1 : 0); }
-
-void LitterRobot4DebugSwitch::dump_config() { LOG_SWITCH("", "Litter Robot 4 Debug Mode", this); }
 
 }  // namespace esphome::litter_robot4

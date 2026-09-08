@@ -5,49 +5,20 @@ namespace esphome::litter_robot4 {
 
 static const char *const TAG = "litter_robot4.binary_sensor";
 
-void LitterRobot4WasteDrawerFullBinarySensor::setup() {
+void LitterRobot4BoolBinarySensor::setup() {
   this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
-    if (reg == REG_WASTE_DRAWER_FULL) {
+    if (reg == this->register_) {
       this->publish_state(value != 0);
     }
   });
 }
 
-void LitterRobot4WasteDrawerFullBinarySensor::dump_config() {
-  LOG_BINARY_SENSOR("", "Litter Robot 4 Waste Drawer Full", this);
+void LitterRobot4BoolBinarySensor::dump_config() {
+  auto *name = register_name(this->register_);
+  if (name) {
+    LOG_BINARY_SENSOR("", name, this);
+  }
 }
-
-void LitterRobot4BonnetRemovedBinarySensor::setup() {
-  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
-    if (reg == REG_BONNET_REMOVED) {
-      this->publish_state(value != 0);
-    }
-  });
-}
-
-void LitterRobot4BonnetRemovedBinarySensor::dump_config() {
-  LOG_BINARY_SENSOR("", "Litter Robot 4 Bonnet Removed", this);
-}
-
-void LitterRobot4NightLightBinarySensor::setup() {
-  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
-    if (reg == REG_NIGHT_LIGHT) {
-      this->publish_state(value != 0);
-    }
-  });
-}
-
-void LitterRobot4NightLightBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Night Light", this); }
-
-void LitterRobot4SleepingBinarySensor::setup() {
-  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
-    if (reg == REG_SLEEPING) {
-      this->publish_state(value != 0);
-    }
-  });
-}
-
-void LitterRobot4SleepingBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Sleeping", this); }
 
 void LitterRobot4LaserDetectBinarySensor::setup() {
   this->publish_initial_state(false);
