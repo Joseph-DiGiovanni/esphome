@@ -112,8 +112,8 @@ binary_sensor:
     type: waste_drawer_full
     name: "Waste Drawer Full"
   - platform: litter_robot4
-    type: bonnet_removed
-    name: "Bonnet Removed"
+    type: bonnet
+    name: "Bonnet"
   - platform: litter_robot4
     type: night_light
     name: "Night Light"
