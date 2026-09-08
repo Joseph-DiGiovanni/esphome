@@ -38,6 +38,9 @@ void LitterRobot4FaultTextSensor::setup() {
     } else if (reg == REG_BONNET_REMOVED) {
       this->bonnet_fault_ = value != 0;
       this->update_display_();
+    } else if (reg == REG_ROBOT_STATUS) {
+      this->robot_status_ = value;
+      this->update_display_();
     }
   });
 }
@@ -51,6 +54,10 @@ void LitterRobot4FaultTextSensor::update_display_() {
 
   if (this->bonnet_fault_) {
     state = "Bonnet removed";
+  }
+
+  if (this->robot_status_ == 0x0C) {
+    state = "Motion detected in waste drawer";
   }
 
   if (this->fault_code_ != 0) {
