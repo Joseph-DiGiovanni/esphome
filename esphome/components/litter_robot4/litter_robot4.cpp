@@ -95,9 +95,14 @@ static const RegisterInfo REGISTER_NAMES[] = {
     {REG_WASTE_DRAWER_PCT, "Waste drawer percent"},
     {REG_WASTE_DRAWER_FULL, "Waste drawer full"},
     {REG_LITTER_LEVEL_RAW, "Litter level raw distance"},
-    {REG_LASER_1, "Laser Sensor 1"},
-    {REG_LASER_2, "Laser Sensor 2"},
-    {REG_LASER_3, "Laser Sensor 3"},
+    {REG_LASER_LEFT, "Laser sensor left"},
+    {REG_LASER_CENTER, "Laser sensor center"},
+    {REG_LASER_RIGHT, "Laser sensor right"},
+    {REG_DEBUG_LIGHT_LEVEL, "Light level"},
+    {REG_DEBUG_WEIGHT, "Weight"},
+    {REG_DEBUG_LASER_LEFT, "Laser sensor left"},
+    {REG_DEBUG_LASER_CENTER, "Laser sensor center"},
+    {REG_DEBUG_LASER_RIGHT, "Laser sensor right"},
 };
 
 static const StatusInfo STATUS_NAMES[] = {
@@ -279,12 +284,27 @@ const char *format_register_value(Register reg, uint16_t value) {
       return litter_buf;
     }
 
-    case REG_LASER_1:
-    case REG_LASER_2:
-    case REG_LASER_3: {
+    case REG_LASER_LEFT:
+    case REG_LASER_CENTER:
+    case REG_LASER_RIGHT:
+    case REG_DEBUG_LASER_LEFT:
+    case REG_DEBUG_LASER_CENTER:
+    case REG_DEBUG_LASER_RIGHT: {
       static char laser_buf[16];
       snprintf(laser_buf, sizeof(laser_buf), "%u mm", value);
       return laser_buf;
+    }
+
+    case REG_DEBUG_LIGHT_LEVEL: {
+      static char light_buf[16];
+      snprintf(light_buf, sizeof(light_buf), "%u%%", value);
+      return light_buf;
+    }
+
+    case REG_DEBUG_WEIGHT: {
+      static char live_weight_buf[16];
+      snprintf(live_weight_buf, sizeof(live_weight_buf), "%.1f lbs", static_cast<int16_t>(value) / 10.0f);
+      return live_weight_buf;
     }
 
     case REG_PANEL_LED: {
