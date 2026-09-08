@@ -92,6 +92,9 @@ switch:
   - platform: litter_robot4
     type: litter_hopper
     name: "Hopper"
+  - platform: litter_robot4
+    type: debug_mode
+    name: "Debug Mode"
 
 datetime:
   - platform: litter_robot4

@@ -29,6 +29,7 @@ enum Operation : uint8_t {
 // Register addresses
 enum Register : uint8_t {
   REG_KEYPAD = 0x01,
+  REG_DEBUG = 0x05,
   REG_POWER_TYPE = 0x07,
   REG_CAT_WEIGHT = 0x09,
   REG_LITTER_HOPPER = 0x0C,
