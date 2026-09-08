@@ -13,14 +13,8 @@ LitterRobot4BoolBinarySensor = litter_robot4_ns.class_(
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
-LitterRobot4LaserDetectBinarySensor = litter_robot4_ns.class_(
-    "LitterRobot4LaserDetectBinarySensor",
-    binary_sensor.BinarySensor,
-    cg.Component,
-    cg.Parented.template(LitterRobot4Component),
-)
-LitterRobot4WeightDetectBinarySensor = litter_robot4_ns.class_(
-    "LitterRobot4WeightDetectBinarySensor",
+LitterRobot4DetectionBinarySensor = litter_robot4_ns.class_(
+    "LitterRobot4DetectionBinarySensor",
     binary_sensor.BinarySensor,
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
@@ -49,6 +43,7 @@ def _bs_schema(class_, *, icon=None, device_class=None):
         .extend(cv.COMPONENT_SCHEMA)
     )
 
+
 _BOOL_REGISTERS = {
     "waste_drawer_full": "REG_WASTE_DRAWER_FULL",
     "bonnet_removed": "REG_BONNET_REMOVED",
@@ -69,12 +64,12 @@ CONFIG_SCHEMA = cv.typed_schema(
         ),
         "sleeping": _bs_schema(LitterRobot4BoolBinarySensor, icon="mdi:sleep"),
         "laser_detect": _bs_schema(
-            LitterRobot4LaserDetectBinarySensor,
+            LitterRobot4DetectionBinarySensor,
             icon="mdi:signal-variant",
             device_class="motion",
         ),
         "weight_detect": _bs_schema(
-            LitterRobot4WeightDetectBinarySensor,
+            LitterRobot4DetectionBinarySensor,
             icon="mdi:scale",
             device_class="motion",
         ),
@@ -93,6 +88,6 @@ async def to_code(config):
     await cg.register_component(var, config)
     await cg.register_parented(var, parent)
     if config[CONF_TYPE] in _BOOL_REGISTERS:
-        cg.add(
-            var.set_register(cg.RawExpression(_BOOL_REGISTERS[config[CONF_TYPE]]))
-        )
+        cg.add(var.set_register(cg.RawExpression(_BOOL_REGISTERS[config[CONF_TYPE]])))
+    if config[CONF_TYPE] == "weight_detect":
+        cg.add(var.set_weight(True))

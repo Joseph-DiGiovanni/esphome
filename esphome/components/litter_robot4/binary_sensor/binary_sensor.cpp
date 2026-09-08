@@ -20,10 +20,18 @@ void LitterRobot4BoolBinarySensor::dump_config() {
   }
 }
 
-void LitterRobot4LaserDetectBinarySensor::setup() {
+void LitterRobot4DetectionBinarySensor::setup() {
   this->publish_initial_state(false);
   this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
-    if (reg == REG_DETECTION_EVENT) {
+    if (reg != REG_DETECTION_EVENT)
+      return;
+    if (this->weight_) {
+      if (value == DETECTION_EVENT_WEIGHT_DETECTED) {
+        this->publish_state(true);
+      } else if (value == DETECTION_EVENT_WEIGHT_CLEAR) {
+        this->publish_state(false);
+      }
+    } else {
       if (value == DETECTION_EVENT_LASER_DETECTED) {
         this->publish_state(true);
       } else if (value == DETECTION_EVENT_LASER_CLEAR) {
@@ -33,23 +41,8 @@ void LitterRobot4LaserDetectBinarySensor::setup() {
   });
 }
 
-void LitterRobot4LaserDetectBinarySensor::dump_config() { LOG_BINARY_SENSOR("", "Litter Robot 4 Laser Detect", this); }
-
-void LitterRobot4WeightDetectBinarySensor::setup() {
-  this->publish_initial_state(false);
-  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
-    if (reg == REG_DETECTION_EVENT) {
-      if (value == DETECTION_EVENT_WEIGHT_DETECTED) {
-        this->publish_state(true);
-      } else if (value == DETECTION_EVENT_WEIGHT_CLEAR) {
-        this->publish_state(false);
-      }
-    }
-  });
-}
-
-void LitterRobot4WeightDetectBinarySensor::dump_config() {
-  LOG_BINARY_SENSOR("", "Litter Robot 4 Weight Detect", this);
+void LitterRobot4DetectionBinarySensor::dump_config() {
+  LOG_BINARY_SENSOR("", this->weight_ ? "Litter Robot 4 Weight Detect" : "Litter Robot 4 Laser Detect", this);
 }
 
 void LitterRobot4HopperMotorBinarySensor::setup() {

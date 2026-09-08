@@ -18,20 +18,16 @@ class LitterRobot4BoolBinarySensor : public binary_sensor::BinarySensor,
   Register register_{};
 };
 
-class LitterRobot4LaserDetectBinarySensor : public binary_sensor::BinarySensor,
-                                            public Component,
-                                            public Parented<LitterRobot4Component> {
+class LitterRobot4DetectionBinarySensor : public binary_sensor::BinarySensor,
+                                          public Component,
+                                          public Parented<LitterRobot4Component> {
  public:
   void setup() override;
   void dump_config() override;
-};
+  void set_weight(bool weight) { this->weight_ = weight; }
 
-class LitterRobot4WeightDetectBinarySensor : public binary_sensor::BinarySensor,
-                                             public Component,
-                                             public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
+ protected:
+  bool weight_{false};
 };
 
 class LitterRobot4HopperMotorBinarySensor : public binary_sensor::BinarySensor,
