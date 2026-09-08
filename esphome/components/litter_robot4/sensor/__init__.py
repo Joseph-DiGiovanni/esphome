@@ -3,9 +3,11 @@ from esphome.components import sensor
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_TYPE,
+    DEVICE_CLASS_DISTANCE,
     DEVICE_CLASS_WEIGHT,
     STATE_CLASS_MEASUREMENT,
     STATE_CLASS_TOTAL_INCREASING,
+    UNIT_MILLIMETER,
     UNIT_PERCENT,
     UNIT_POUND,
 )
@@ -47,7 +49,8 @@ _REGISTER_REGISTERS = {
     "power_cycle_count": "REG_POWER_CYCLE_COUNT",
     "empty_cycle_count": "REG_EMPTY_CYCLE_COUNT",
     "filter_cycle_count": "REG_FILTER_CYCLE_COUNT",
-    "calibrated_litter_level": "REG_CALIBRATED_LITTER_LEVEL_RAW",
+    "litter_level_distance": "REG_LITTER_LEVEL_RAW",
+    "calibrated_litter_distance": "REG_CALIBRATED_LITTER_LEVEL_RAW",
 }
 
 
@@ -93,6 +96,20 @@ CONFIG_SCHEMA = cv.typed_schema(
                 cv.Optional(CONF_MIN_DISTANCE, default=435.0): cv.positive_float,
                 cv.Optional(CONF_MAX_DISTANCE, default=480.0): cv.positive_float,
             }
+        ),
+        "litter_level_distance": _sensor_schema(
+            RegisterSensor,
+            acc_decimals=0,
+            unit=UNIT_MILLIMETER,
+            device_class=DEVICE_CLASS_DISTANCE,
+            icon="mdi:tray-full",
+        ),
+        "calibrated_litter_distance": _sensor_schema(
+            RegisterSensor,
+            acc_decimals=0,
+            unit=UNIT_MILLIMETER,
+            device_class=DEVICE_CLASS_DISTANCE,
+            icon="mdi:target",
         ),
         "last_cat_weight": _sensor_schema(
             CatWeightSensor,

@@ -44,7 +44,8 @@ static const Register POLL_REGISTERS[] = {REG_DEBUG,
                                           REG_FILTER_CYCLE_COUNT,
                                           REG_WASTE_DRAWER_PCT,
                                           REG_WASTE_DRAWER_FULL,
-                                          REG_LITTER_LEVEL_RAW};
+                                          REG_LITTER_LEVEL_RAW,
+                                          REG_CALIBRATED_LITTER_LEVEL_RAW};
 
 static const RegisterInfo REGISTER_NAMES[] = {
     {REG_KEYPAD, "Keypad"},
