@@ -2,7 +2,12 @@ import esphome.codegen as cg
 from esphome.components import text_sensor
 import esphome.config_validation as cv
 
-from .. import CONF_LITTER_ROBOT4_ID, LitterRobot4Component, litter_robot4_ns
+from .. import (
+    CONF_LITTER_ROBOT4_ID,
+    LITTER_ROBOT4_DEVICE_SCHEMA,
+    LitterRobot4Component,
+    litter_robot4_ns,
+)
 
 DEPENDENCIES = ["litter_robot4"]
 
@@ -37,11 +42,7 @@ def _status_schema():
         text_sensor.text_sensor_schema(
             LitterRobot4StatusTextSensor, icon="mdi:information"
         )
-        .extend(
-            {
-                cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
-            }
-        )
+        .extend(LITTER_ROBOT4_DEVICE_SCHEMA)
         .extend(cv.COMPONENT_SCHEMA)
     )
 
@@ -51,11 +52,7 @@ def _power_type_schema():
         text_sensor.text_sensor_schema(
             LitterRobot4PowerTypeTextSensor, icon="mdi:power-plug"
         )
-        .extend(
-            {
-                cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
-            }
-        )
+        .extend(LITTER_ROBOT4_DEVICE_SCHEMA)
         .extend(cv.COMPONENT_SCHEMA)
     )
 
@@ -65,11 +62,7 @@ def _fault_schema():
         text_sensor.text_sensor_schema(
             LitterRobot4FaultTextSensor, icon="mdi:alert-octagon"
         )
-        .extend(
-            {
-                cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
-            }
-        )
+        .extend(LITTER_ROBOT4_DEVICE_SCHEMA)
         .extend(cv.COMPONENT_SCHEMA)
     )
 
@@ -79,11 +72,7 @@ def _hopper_status_schema():
         text_sensor.text_sensor_schema(
             LitterRobot4HopperStatusTextSensor, icon="mdi:cup"
         )
-        .extend(
-            {
-                cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
-            }
-        )
+        .extend(LITTER_ROBOT4_DEVICE_SCHEMA)
         .extend(cv.COMPONENT_SCHEMA)
     )
 

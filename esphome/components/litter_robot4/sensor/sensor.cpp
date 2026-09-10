@@ -5,16 +5,6 @@ namespace esphome::litter_robot4 {
 
 static const char *const TAG = "litter_robot4.sensor";
 
-void LitterRobot4WasteDrawerSensor::setup() {
-  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
-    if (reg == REG_WASTE_DRAWER_PCT) {
-      this->publish_state(value);
-    }
-  });
-}
-
-void LitterRobot4WasteDrawerSensor::dump_config() { LOG_SENSOR("", "Litter Robot 4 Waste Drawer Level", this); }
-
 void LitterRobot4LitterLevelSensor::setup() {
   this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_LITTER_LEVEL_RAW) {
@@ -50,9 +40,9 @@ void LitterRobot4RegisterSensor::setup() {
 }
 
 void LitterRobot4RegisterSensor::dump_config() {
-  auto *name = register_name(this->register_);
-  if (name) {
-    LOG_SENSOR("", name, this);
+  LOG_SENSOR("", "Litter Robot 4", this);
+  if (auto *name = register_name(this->register_)) {
+    ESP_LOGCONFIG(TAG, "  Register: %s", name);
   }
 }
 

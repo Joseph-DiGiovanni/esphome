@@ -6,12 +6,6 @@
 
 namespace esphome::litter_robot4 {
 
-class LitterRobot4WasteDrawerSensor : public sensor::Sensor, public Component, public Parented<LitterRobot4Component> {
- public:
-  void setup() override;
-  void dump_config() override;
-};
-
 class LitterRobot4LitterLevelSensor : public sensor::Sensor, public Component, public Parented<LitterRobot4Component> {
  public:
   void setup() override;

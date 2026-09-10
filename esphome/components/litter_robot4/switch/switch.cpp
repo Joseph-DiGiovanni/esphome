@@ -18,9 +18,9 @@ void LitterRobot4BoolSwitch::write_state(bool state) {
 }
 
 void LitterRobot4BoolSwitch::dump_config() {
-  auto *name = register_name(this->register_);
-  if (name) {
-    LOG_SWITCH("", name, this);
+  LOG_SWITCH("", "Litter Robot 4", this);
+  if (auto *name = register_name(this->register_)) {
+    ESP_LOGCONFIG(TAG, "  Register: %s", name);
   }
 }
 

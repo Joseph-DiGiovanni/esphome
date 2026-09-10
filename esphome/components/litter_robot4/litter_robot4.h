@@ -102,6 +102,17 @@ enum RobotStatus : uint16_t {
   STATUS_CALIBRATING = 0x18,
 };
 
+enum GlobeFaultCode : uint16_t {
+  FAULT_CLEAR = 0x00,
+  FAULT_TIMEOUT = 0x01,
+  FAULT_GLOBE_DISCONNECT = 0x02,
+  FAULT_UNDERVOLTAGE = 0x03,
+  FAULT_GLOBE_OVERTORQUE_AMP = 0x04,
+  FAULT_GLOBE_OVERTORQUE_SLOPE = 0x05,
+  FAULT_PINCH = 0x06,
+  FAULT_ALL_SENSORS = 0x07,
+};
+
 enum LitterHopperState : uint16_t {
   LITTER_HOPPER_DISABLED = 0x0000,
   LITTER_HOPPER_ENABLE_CMD = 0x0001,
@@ -111,6 +122,24 @@ enum LitterHopperState : uint16_t {
 };
 
 static const uint16_t LITTER_HOPPER_STOPPED_HIGH = 0x20;
+
+enum NightLightMode : uint16_t {
+  NIGHT_LIGHT_OFF = 0,
+  NIGHT_LIGHT_ON = 1,
+  NIGHT_LIGHT_AUTO = 2,
+};
+
+enum BrightnessLevel : uint16_t {
+  BRIGHTNESS_LOW = 25,
+  BRIGHTNESS_MEDIUM = 50,
+  BRIGHTNESS_HIGH = 100,
+};
+
+enum PanelBrightnessDim : uint16_t {
+  PANEL_DIM_LOW = 15,
+  PANEL_DIM_MEDIUM = 40,
+  PANEL_DIM_HIGH = 90,
+};
 
 enum WifiStatus : uint16_t {
   WIFI_OFF = 0x00,
@@ -152,19 +181,16 @@ enum DayOfWeek : uint8_t {
   DAY_SAT,
 };
 
-struct RegisterInfo {
-  Register reg;
-  const char *name;
-};
-
-struct StatusInfo {
-  RobotStatus status;
-  const char *name;
-};
-
 const char *register_name(Register reg);
 const char *status_name(uint16_t status);
 const char *wifi_status_name(uint16_t status);
+uint16_t wifi_status_value(const char *name);
+const char *fault_name(uint16_t code);
+const char *brightness_name(uint16_t value);
+const char *night_light_mode_name(uint16_t value);
+uint16_t brightness_value(const char *name);
+uint16_t night_light_mode_value(const char *name);
+uint16_t panel_brightness_value(const char *name);
 const char *format_register_value(Register reg, uint16_t value);
 
 struct PendingOperation {

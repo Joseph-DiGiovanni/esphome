@@ -3,7 +3,12 @@ from esphome.components import binary_sensor
 import esphome.config_validation as cv
 from esphome.const import CONF_TYPE
 
-from .. import CONF_LITTER_ROBOT4_ID, LitterRobot4Component, litter_robot4_ns
+from .. import (
+    CONF_LITTER_ROBOT4_ID,
+    LITTER_ROBOT4_DEVICE_SCHEMA,
+    LitterRobot4Component,
+    litter_robot4_ns,
+)
 
 DEPENDENCIES = ["litter_robot4"]
 
@@ -29,11 +34,7 @@ def _bs_schema(class_, *, icon=None, device_class=None):
         kwargs["device_class"] = device_class
     return (
         binary_sensor.binary_sensor_schema(class_, **kwargs)
-        .extend(
-            {
-                cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
-            }
-        )
+        .extend(LITTER_ROBOT4_DEVICE_SCHEMA)
         .extend(cv.COMPONENT_SCHEMA)
     )
 
@@ -59,12 +60,12 @@ CONFIG_SCHEMA = cv.typed_schema(
         "laser_detect": _bs_schema(
             LitterRobot4DetectionBinarySensor,
             icon="mdi:contactless-payment-circle",
-            device_class="motion",
+            device_class="occupancy",
         ),
         "weight_detect": _bs_schema(
             LitterRobot4DetectionBinarySensor,
             icon="mdi:scale",
-            device_class="motion",
+            device_class="occupancy",
         ),
     }
 )
