@@ -3,7 +3,12 @@ from esphome.components import select
 import esphome.config_validation as cv
 from esphome.const import CONF_TYPE, ENTITY_CATEGORY_CONFIG
 
-from .. import CONF_LITTER_ROBOT4_ID, LitterRobot4Component, litter_robot4_ns
+from .. import (
+    CONF_LITTER_ROBOT4_ID,
+    LITTER_ROBOT4_DEVICE_SCHEMA,
+    LitterRobot4Component,
+    litter_robot4_ns,
+)
 
 DEPENDENCIES = ["litter_robot4"]
 
@@ -46,11 +51,7 @@ def _select_schema(class_, *, icon=None):
         kwargs["icon"] = icon
     return (
         select.select_schema(class_, entity_category=ENTITY_CATEGORY_CONFIG, **kwargs)
-        .extend(
-            {
-                cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
-            }
-        )
+        .extend(LITTER_ROBOT4_DEVICE_SCHEMA)
         .extend(cv.COMPONENT_SCHEMA)
     )
 

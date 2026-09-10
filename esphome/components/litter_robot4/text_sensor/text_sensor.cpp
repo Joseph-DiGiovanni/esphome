@@ -49,31 +49,17 @@ void LitterRobot4FaultTextSensor::update_display_() {
     state = "Bonnet removed";
   }
 
-  if (this->robot_status_ == 0x0C) {
+  if (this->robot_status_ == STATUS_EXPOSING_WASTE_DRAWER) {
     state = "Motion detected in waste drawer";
   }
 
   if (this->fault_code_ != 0) {
-    switch (this->fault_code_) {
-      case 0x02:
-        state = "Globe motor disconnected";
-        break;
-      case 0x03:
-        state = "Undervoltage";
-        break;
-      case 0x04:
-      case 0x05:
-        state = "Globe motor over-torque";
-        break;
-      case 0x06:
-        state = "Pinch detected";
-        break;
-      default: {
-        static char unknown_buf[16];
-        snprintf(unknown_buf, sizeof(unknown_buf), "Fault (0x%02X)", this->fault_code_);
-        state = unknown_buf;
-        break;
-      }
+    if (auto *name = fault_name(this->fault_code_)) {
+      state = name;
+    } else {
+      static char unknown_buf[16];
+      snprintf(unknown_buf, sizeof(unknown_buf), "Fault (0x%02X)", this->fault_code_);
+      state = unknown_buf;
     }
   }
   this->publish_state(state);

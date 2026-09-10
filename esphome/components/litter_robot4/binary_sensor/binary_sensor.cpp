@@ -14,9 +14,9 @@ void LitterRobot4BoolBinarySensor::setup() {
 }
 
 void LitterRobot4BoolBinarySensor::dump_config() {
-  auto *name = register_name(this->register_);
-  if (name) {
-    LOG_BINARY_SENSOR("", name, this);
+  LOG_BINARY_SENSOR("", "Litter Robot 4", this);
+  if (auto *name = register_name(this->register_)) {
+    ESP_LOGCONFIG(TAG, "  Register: %s", name);
   }
 }
 

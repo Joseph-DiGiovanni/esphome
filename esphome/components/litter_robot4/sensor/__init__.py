@@ -12,32 +12,31 @@ from esphome.const import (
     UNIT_POUND,
 )
 
-from .. import CONF_LITTER_ROBOT4_ID, LitterRobot4Component, litter_robot4_ns
+from .. import (
+    CONF_LITTER_ROBOT4_ID,
+    LITTER_ROBOT4_DEVICE_SCHEMA,
+    LitterRobot4Component,
+    litter_robot4_ns,
+)
 
 DEPENDENCIES = ["litter_robot4"]
 
 CONF_MIN_DISTANCE = "min_distance"
 CONF_MAX_DISTANCE = "max_distance"
 
-LitterRobot4WasteDrawerSensor = litter_robot4_ns.class_(
-    "LitterRobot4WasteDrawerSensor",
-    sensor.Sensor,
-    cg.Component,
-    cg.Parented.template(LitterRobot4Component),
-)
 LitterRobot4LitterLevelSensor = litter_robot4_ns.class_(
     "LitterRobot4LitterLevelSensor",
     sensor.Sensor,
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
-CatWeightSensor = litter_robot4_ns.class_(
+LitterRobot4CatWeightSensor = litter_robot4_ns.class_(
     "LitterRobot4CatWeightSensor",
     sensor.Sensor,
     cg.Component,
     cg.Parented.template(LitterRobot4Component),
 )
-RegisterSensor = litter_robot4_ns.class_(
+LitterRobot4RegisterSensor = litter_robot4_ns.class_(
     "LitterRobot4RegisterSensor",
     sensor.Sensor,
     cg.Component,
@@ -45,6 +44,7 @@ RegisterSensor = litter_robot4_ns.class_(
 )
 
 _REGISTER_REGISTERS = {
+    "waste_drawer_level": "REG_WASTE_DRAWER_PCT",
     "clean_cycle_count": "REG_CLEAN_CYCLE_COUNT",
     "power_cycle_count": "REG_POWER_CYCLE_COUNT",
     "empty_cycle_count": "REG_EMPTY_CYCLE_COUNT",
@@ -75,11 +75,7 @@ def _sensor_schema(
         kwargs["icon"] = icon
     return (
         sensor.sensor_schema(class_, **kwargs)
-        .extend(
-            {
-                cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
-            }
-        )
+        .extend(LITTER_ROBOT4_DEVICE_SCHEMA)
         .extend(cv.COMPONENT_SCHEMA)
     )
 
@@ -87,7 +83,7 @@ def _sensor_schema(
 CONFIG_SCHEMA = cv.typed_schema(
     {
         "waste_drawer_level": _sensor_schema(
-            LitterRobot4WasteDrawerSensor, unit=UNIT_PERCENT, icon="mdi:inbox"
+            LitterRobot4RegisterSensor, unit=UNIT_PERCENT, icon="mdi:inbox"
         ),
         "litter_level": _sensor_schema(
             LitterRobot4LitterLevelSensor, unit=UNIT_PERCENT, icon="mdi:tray-full"
@@ -98,46 +94,46 @@ CONFIG_SCHEMA = cv.typed_schema(
             }
         ),
         "litter_level_distance": _sensor_schema(
-            RegisterSensor,
+            LitterRobot4RegisterSensor,
             acc_decimals=0,
             unit=UNIT_MILLIMETER,
             device_class=DEVICE_CLASS_DISTANCE,
             icon="mdi:tray-full",
         ),
         "calibrated_litter_distance": _sensor_schema(
-            RegisterSensor,
+            LitterRobot4RegisterSensor,
             acc_decimals=0,
             unit=UNIT_MILLIMETER,
             device_class=DEVICE_CLASS_DISTANCE,
             icon="mdi:target",
         ),
         "last_cat_weight": _sensor_schema(
-            CatWeightSensor,
+            LitterRobot4CatWeightSensor,
             unit=UNIT_POUND,
             acc_decimals=2,
             device_class=DEVICE_CLASS_WEIGHT,
             icon="mdi:weight",
         ),
         "clean_cycle_count": _sensor_schema(
-            RegisterSensor,
+            LitterRobot4RegisterSensor,
             acc_decimals=0,
             state_class=STATE_CLASS_TOTAL_INCREASING,
             icon="mdi:counter",
         ),
         "power_cycle_count": _sensor_schema(
-            RegisterSensor,
+            LitterRobot4RegisterSensor,
             acc_decimals=0,
             state_class=STATE_CLASS_TOTAL_INCREASING,
             icon="mdi:power-cycle",
         ),
         "empty_cycle_count": _sensor_schema(
-            RegisterSensor,
+            LitterRobot4RegisterSensor,
             acc_decimals=0,
             state_class=STATE_CLASS_TOTAL_INCREASING,
             icon="mdi:trash-can",
         ),
         "filter_cycle_count": _sensor_schema(
-            RegisterSensor,
+            LitterRobot4RegisterSensor,
             acc_decimals=0,
             state_class=STATE_CLASS_TOTAL_INCREASING,
             icon="mdi:air-filter",

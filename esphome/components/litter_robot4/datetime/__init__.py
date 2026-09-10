@@ -8,7 +8,12 @@ from esphome.const import (
     ENTITY_CATEGORY_CONFIG,
 )
 
-from .. import CONF_LITTER_ROBOT4_ID, LitterRobot4Component, litter_robot4_ns
+from .. import (
+    CONF_LITTER_ROBOT4_ID,
+    LITTER_ROBOT4_DEVICE_SCHEMA,
+    LitterRobot4Component,
+    litter_robot4_ns,
+)
 
 DEPENDENCIES = ["litter_robot4"]
 
@@ -39,7 +44,6 @@ _DAY_TYPES = {
 
 def _time_schema(*, icon=None):
     ext = {
-        cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
         cv.Optional(
             CONF_ENTITY_CATEGORY, default=ENTITY_CATEGORY_CONFIG
         ): cv.entity_category,
@@ -47,7 +51,10 @@ def _time_schema(*, icon=None):
     if icon is not None:
         ext[cv.Optional(CONF_ICON, default=icon)] = cv.icon
     return (
-        datetime_.time_schema(LitterRobot4Time).extend(ext).extend(cv.COMPONENT_SCHEMA)
+        datetime_.time_schema(LitterRobot4Time)
+        .extend(ext)
+        .extend(LITTER_ROBOT4_DEVICE_SCHEMA)
+        .extend(cv.COMPONENT_SCHEMA)
     )
 
 

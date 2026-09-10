@@ -3,7 +3,12 @@ from esphome.components import switch
 import esphome.config_validation as cv
 from esphome.const import CONF_TYPE, ENTITY_CATEGORY_CONFIG, ENTITY_CATEGORY_DIAGNOSTIC
 
-from .. import CONF_LITTER_ROBOT4_ID, LitterRobot4Component, litter_robot4_ns
+from .. import (
+    CONF_LITTER_ROBOT4_ID,
+    LITTER_ROBOT4_DEVICE_SCHEMA,
+    LitterRobot4Component,
+    litter_robot4_ns,
+)
 
 DEPENDENCIES = ["litter_robot4"]
 
@@ -44,96 +49,60 @@ DAY_TYPES = {
 }
 
 
-def _lockout_schema():
+def _switch_schema(
+    class_,
+    *,
+    icon=None,
+    entity_category=None,
+    default_restore_mode=None,
+):
+    kwargs = {}
+    if icon is not None:
+        kwargs["icon"] = icon
+    if entity_category is not None:
+        kwargs["entity_category"] = entity_category
+    if default_restore_mode is not None:
+        kwargs["default_restore_mode"] = default_restore_mode
     return (
-        switch.switch_schema(
-            LitterRobot4BoolSwitch,
-            icon=ICON_LOCK,
-            entity_category=ENTITY_CATEGORY_CONFIG,
-            default_restore_mode="DISABLED",
-        )
-        .extend(
-            {
-                cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
-            }
-        )
-        .extend(cv.COMPONENT_SCHEMA)
-    )
-
-
-def _day_switch_schema():
-    return (
-        switch.switch_schema(
-            LitterRobot4SleepDayEnabledSwitch,
-            entity_category=ENTITY_CATEGORY_CONFIG,
-            icon="mdi:calendar-clock",
-        )
-        .extend(
-            {
-                cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
-            }
-        )
-        .extend(cv.COMPONENT_SCHEMA)
-    )
-
-
-def _power_schema():
-    return (
-        switch.switch_schema(
-            LitterRobot4PowerSwitch,
-            icon="mdi:power",
-            default_restore_mode="DISABLED",
-        )
-        .extend(
-            {
-                cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
-            }
-        )
-        .extend(cv.COMPONENT_SCHEMA)
-    )
-
-
-def _litter_hopper_schema():
-    return (
-        switch.switch_schema(
-            LitterRobot4BoolSwitch,
-            icon="mdi:cup",
-            entity_category=ENTITY_CATEGORY_CONFIG,
-            default_restore_mode="DISABLED",
-        )
-        .extend(
-            {
-                cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
-            }
-        )
-        .extend(cv.COMPONENT_SCHEMA)
-    )
-
-
-def _debug_schema():
-    return (
-        switch.switch_schema(
-            LitterRobot4BoolSwitch,
-            icon="mdi:bug",
-            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-            default_restore_mode="DISABLED",
-        )
-        .extend(
-            {
-                cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
-            }
-        )
+        switch.switch_schema(class_, **kwargs)
+        .extend(LITTER_ROBOT4_DEVICE_SCHEMA)
         .extend(cv.COMPONENT_SCHEMA)
     )
 
 
 CONFIG_SCHEMA = cv.typed_schema(
     {
-        "control_panel_lockout": _lockout_schema(),
-        **{key: _day_switch_schema() for key in DAY_TYPES},
-        "power": _power_schema(),
-        "litter_hopper": _litter_hopper_schema(),
-        "debug_mode": _debug_schema(),
+        "control_panel_lockout": _switch_schema(
+            LitterRobot4BoolSwitch,
+            icon=ICON_LOCK,
+            entity_category=ENTITY_CATEGORY_CONFIG,
+            default_restore_mode="DISABLED",
+        ),
+        **{
+            key: _switch_schema(
+                LitterRobot4SleepDayEnabledSwitch,
+                icon="mdi:calendar-clock",
+                entity_category=ENTITY_CATEGORY_CONFIG,
+            )
+            for key in DAY_TYPES
+        },
+        "power": _switch_schema(
+            LitterRobot4PowerSwitch,
+            icon="mdi:power",
+            default_restore_mode="DISABLED",
+        ),
+        "litter_hopper": _switch_schema(
+            LitterRobot4BoolSwitch,
+            icon="mdi:cup",
+            entity_category=ENTITY_CATEGORY_CONFIG,
+            default_restore_mode="DISABLED",
+        ),
+        "debug_mode": _switch_schema(
+            LitterRobot4BoolSwitch,
+            icon="mdi:bug",
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+            default_restore_mode="DISABLED",
+        ),
     }
 )
 

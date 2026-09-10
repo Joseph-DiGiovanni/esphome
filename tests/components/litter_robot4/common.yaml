@@ -1,5 +1,17 @@
+wifi:
+  ssid: MySSID
+  password: password1
+
+api:
+
 litter_robot4:
   id: my_litter_robot4
+  time_id: ha_time
+
+time:
+  - platform: homeassistant
+    timezone: America/New_York
+    id: ha_time
 
 interval:
   - interval: 24h
@@ -16,6 +28,9 @@ text_sensor:
   - platform: litter_robot4
     type: fault
     name: "Fault"
+  - platform: litter_robot4
+    type: hopper_status
+    name: "Hopper Status"
 
 sensor:
   - platform: litter_robot4
@@ -129,6 +144,3 @@ binary_sensor:
   - platform: litter_robot4
     type: weight_detect
     name: "Weight Detect"
-  - platform: litter_robot4
-    type: hopper_motor
-    name: "Hopper Motor"

@@ -28,6 +28,12 @@ LitterRobot4SyncTimeAction = litter_robot4_ns.class_(
 
 CONF_LITTER_ROBOT4_ID = "litter_robot4_id"
 
+LITTER_ROBOT4_DEVICE_SCHEMA = cv.Schema(
+    {
+        cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
+    }
+)
+
 CONFIG_SCHEMA = (
     cv.Schema(
         {
