@@ -304,14 +304,18 @@ const char *format_register_value(Register reg, uint16_t value) {
         case LITTER_HOPPER_ENABLE_CMD:
         case LITTER_HOPPER_ENABLED:
           return "On";
-        case LITTER_HOPPER_MOTOR_START:
-          return "Dispense start";
         case LITTER_HOPPER_NOT_CONNECTED:
           return "Fault";
         default:
-          if ((value >> 8) == LITTER_HOPPER_STOPPED_HIGH) {
-            return "Dispense complete";
-          }
+          static char hopper_buf[32];
+          switch ((value >> 8)) {
+            case LITTER_HOPPER_START_HIGH:
+              snprintf(hopper_buf, sizeof(hopper_buf), "Dispense start (0x%04X)", value);
+              return hopper_buf;
+            case LITTER_HOPPER_STOPPED_HIGH:
+              snprintf(hopper_buf, sizeof(hopper_buf), "Dispense complete (0x%04X)", value);
+              return hopper_buf;
+        }
       }
       break;
     }

@@ -79,15 +79,17 @@ void LitterRobot4HopperStatusTextSensor::setup() {
       case LITTER_HOPPER_ENABLED:
         this->publish_state("Ready");
         break;
-      case LITTER_HOPPER_MOTOR_START:
-        this->publish_state("Running");
-        break;
       case LITTER_HOPPER_NOT_CONNECTED:
         this->publish_state("Not connected");
         break;
       default:
-        if ((value >> 8) == LITTER_HOPPER_STOPPED_HIGH) {
-          this->publish_state("Ready");
+        switch ((value >> 8)) {
+          case LITTER_HOPPER_START_HIGH:
+            this->publish_state("Running");
+            break;
+          case LITTER_HOPPER_STOPPED_HIGH:
+            this->publish_state("Ready");
+            break;
         }
         break;
     }
