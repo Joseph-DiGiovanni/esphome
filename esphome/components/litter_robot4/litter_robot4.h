@@ -118,9 +118,9 @@ enum LitterHopperState : uint16_t {
   LITTER_HOPPER_ENABLE_CMD = 0x0001,
   LITTER_HOPPER_ENABLED = 0x0020,
   LITTER_HOPPER_NOT_CONNECTED = 0x0030,
-  LITTER_HOPPER_MOTOR_START = 0x0114,
 };
 
+static const uint16_t LITTER_HOPPER_START_HIGH = 0x01;
 static const uint16_t LITTER_HOPPER_STOPPED_HIGH = 0x20;
 
 enum NightLightMode : uint16_t {
