@@ -23,6 +23,10 @@ void LitterRobot4BoolBinarySensor::dump_config() {
 void LitterRobot4DetectionBinarySensor::setup() {
   this->publish_initial_state(false);
   this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
+    if (reg == REG_KEYPAD && (value == CMD_KEYPAD_RESET)) {
+      this->publish_state(false);
+      return;
+    }
     if (reg != REG_DETECTION_EVENT)
       return;
     if (this->weight_) {
