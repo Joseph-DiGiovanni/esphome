@@ -36,9 +36,9 @@ void LitterRobot4DetectionBinarySensor::setup() {
         this->publish_state(false);
       }
     } else {
-      if (value == DETECTION_EVENT_LASER_DETECTED) {
+      if (value == DETECTION_EVENT_CURTAIN_DETECTED) {
         this->publish_state(true);
-      } else if (value == DETECTION_EVENT_LASER_CLEAR) {
+      } else if (value == DETECTION_EVENT_CURTAIN_CLEAR) {
         this->publish_state(false);
       }
     }
@@ -46,7 +46,7 @@ void LitterRobot4DetectionBinarySensor::setup() {
 }
 
 void LitterRobot4DetectionBinarySensor::dump_config() {
-  LOG_BINARY_SENSOR("", this->weight_ ? "Litter Robot 4 Weight Detect" : "Litter Robot 4 Laser Detect", this);
+  LOG_BINARY_SENSOR("", this->weight_ ? "Litter Robot 4 Weight Detected" : "Litter Robot 4 Curtain Detected", this);
 }
 
 }  // namespace esphome::litter_robot4

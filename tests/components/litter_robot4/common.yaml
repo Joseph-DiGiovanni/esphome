@@ -139,8 +139,8 @@ binary_sensor:
     type: sleeping
     name: "Sleeping"
   - platform: litter_robot4
-    type: laser_detect
-    name: "Laser Detect"
+    type: curtain_detected
+    name: "Curtain Detected"
   - platform: litter_robot4
-    type: weight_detect
-    name: "Weight Detect"
+    type: weight_detected
+    name: "Weight Detected"

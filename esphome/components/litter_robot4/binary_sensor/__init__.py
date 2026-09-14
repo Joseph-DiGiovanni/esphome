@@ -57,12 +57,12 @@ CONFIG_SCHEMA = cv.typed_schema(
             LitterRobot4BoolBinarySensor, icon="mdi:lightbulb-night"
         ),
         "sleeping": _bs_schema(LitterRobot4BoolBinarySensor, icon="mdi:sleep"),
-        "laser_detect": _bs_schema(
+        "curtain_detected": _bs_schema(
             LitterRobot4DetectionBinarySensor,
             icon="mdi:contactless-payment-circle",
             device_class="occupancy",
         ),
-        "weight_detect": _bs_schema(
+        "weight_detected": _bs_schema(
             LitterRobot4DetectionBinarySensor,
             icon="mdi:scale",
             device_class="occupancy",
@@ -81,5 +81,5 @@ async def to_code(config):
     if config[CONF_TYPE] == "bonnet":
         cg.add(var.set_register(cg.RawExpression("REG_BONNET_REMOVED")))
         cg.add(var.set_invert(True))
-    if config[CONF_TYPE] == "weight_detect":
+    if config[CONF_TYPE] == "weight_detected":
         cg.add(var.set_weight(True))

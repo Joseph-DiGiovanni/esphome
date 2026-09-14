@@ -98,15 +98,15 @@ static const RegisterInfo REGISTER_NAMES[] = {
     {REG_WASTE_DRAWER_PCT, "Waste drawer percent"},
     {REG_WASTE_DRAWER_FULL, "Waste drawer full"},
     {REG_LITTER_LEVEL_RAW, "Litter level raw distance"},
-    {REG_LASER_LEFT, "Laser sensor left"},
-    {REG_LASER_CENTER, "Laser sensor center"},
-    {REG_LASER_RIGHT, "Laser sensor right"},
+    {REG_CURTAIN_LEFT, "Curtain sensor left"},
+    {REG_CURTAIN_CENTER, "Curtain sensor center"},
+    {REG_CURTAIN_RIGHT, "Curtain sensor right"},
     {REG_CALIBRATED_LITTER_LEVEL_RAW, "Calibrated litter level raw distance"},
     {REG_DEBUG_LIGHT_LEVEL, "Light level"},
     {REG_DEBUG_WEIGHT, "Weight"},
-    {REG_DEBUG_LASER_LEFT, "Laser sensor left"},
-    {REG_DEBUG_LASER_CENTER, "Laser sensor center"},
-    {REG_DEBUG_LASER_RIGHT, "Laser sensor right"},
+    {REG_DEBUG_CURTAIN_LEFT, "Curtain sensor left"},
+    {REG_DEBUG_CURTAIN_CENTER, "Curtain sensor center"},
+    {REG_DEBUG_CURTAIN_RIGHT, "Curtain sensor right"},
 };
 
 static const StatusInfo STATUS_NAMES[] = {
@@ -143,8 +143,8 @@ static const WifiStatusInfo WIFI_STATUS_NAMES[] = {
 // clang-format on
 
 static const DetectionEventInfo DETECTION_EVENT_NAMES[] = {
-    {DETECTION_EVENT_LASER_CLEAR, "Laser clear"},
-    {DETECTION_EVENT_LASER_DETECTED, "Laser triggered"},
+    {DETECTION_EVENT_CURTAIN_CLEAR, "Curtain clear"},
+    {DETECTION_EVENT_CURTAIN_DETECTED, "Curtain triggered"},
     {DETECTION_EVENT_WEIGHT_CLEAR, "Weight clear"},
     {DETECTION_EVENT_WEIGHT_DETECTED, "Weight detected"},
 };
@@ -337,12 +337,12 @@ const char *format_register_value(Register reg, uint16_t value) {
 
     case REG_LITTER_LEVEL_RAW:
     case REG_CALIBRATED_LITTER_LEVEL_RAW:
-    case REG_LASER_LEFT:
-    case REG_LASER_CENTER:
-    case REG_LASER_RIGHT:
-    case REG_DEBUG_LASER_LEFT:
-    case REG_DEBUG_LASER_CENTER:
-    case REG_DEBUG_LASER_RIGHT: {
+    case REG_CURTAIN_LEFT:
+    case REG_CURTAIN_CENTER:
+    case REG_CURTAIN_RIGHT:
+    case REG_DEBUG_CURTAIN_LEFT:
+    case REG_DEBUG_CURTAIN_CENTER:
+    case REG_DEBUG_CURTAIN_RIGHT: {
       static char mm_buf[16];
       snprintf(mm_buf, sizeof(mm_buf), "%u mm", value);
       return mm_buf;
