@@ -1,0 +1,31 @@
+wifi:
+  ssid: MySSID
+  password: password1
+
+api:
+
+litter_robot3:
+  id: my_litter_robot3
+
+text_sensor:
+  - platform: litter_robot3
+    type: status
+    name: "Status"
+
+sensor:
+  - platform: litter_robot3
+    type: waste_drawer_cycle_count
+    name: "Waste Drawer Cycles"
+
+switch:
+  - platform: litter_robot3
+    type: power
+    name: "Power"
+  - platform: litter_robot3
+    type: night_light
+    name: "Night Light"
+
+button:
+  - platform: litter_robot3
+    type: cycle
+    name: "Manual Cycle"
