@@ -36,6 +36,12 @@ static uint8_t hex_digit_value(char c) {
   return 0;
 }
 
+static uint8_t cycle_delay_minutes(char code) { return hex_digit_value(code); }
+
+static char cycle_delay_code(uint8_t minutes) {
+  return minutes < 10 ? static_cast<char>('0' + minutes) : static_cast<char>('A' + (minutes - 10));
+}
+
 const char *system_state_name(uint8_t state) {
   switch (state) {
     case 1:
@@ -81,6 +87,13 @@ void LitterRobot3Component::send_command(char command, const char *value) {
     ESP_LOGD(TAG, "Sent )%c", command);
 }
 
+void LitterRobot3Component::set_cycle_delay(uint8_t minutes) {
+  if (minutes < 3 || minutes > 15)
+    return;
+  char value[2] = {cycle_delay_code(minutes), '\0'};
+  this->send_command('W', value);
+}
+
 void LitterRobot3Component::loop() {
   while (this->available()) {
     char c = static_cast<char>(this->read());
@@ -124,10 +137,18 @@ void LitterRobot3Component::handle_status_(char *line) {
     return;
   }
 
+  uint8_t power_type = static_cast<uint8_t>(tokens[0][1] - '0');
   uint8_t power_state = static_cast<uint8_t>(tokens[1][0] - '0');
   uint8_t system_state = hex_digit_value(tokens[1][1]);
+  uint8_t cycle_delay = cycle_delay_minutes(tokens[2][0]);
   bool night_light = tokens[3][0] != '0';
+  bool panel_lockout = tokens[5][0] != '0';
 
+  if (!this->has_power_type_ || power_type != this->power_type_) {
+    this->power_type_ = power_type;
+    this->has_power_type_ = true;
+    this->publish_field_(LR3_FIELD_POWER_TYPE, power_type);
+  }
   if (!this->has_power_state_ || power_state != this->power_state_) {
     this->power_state_ = power_state;
     this->has_power_state_ = true;
@@ -138,10 +159,20 @@ void LitterRobot3Component::handle_status_(char *line) {
     this->has_system_state_ = true;
     this->publish_field_(LR3_FIELD_SYSTEM_STATE, system_state);
   }
+  if (!this->has_cycle_delay_ || cycle_delay != this->cycle_delay_) {
+    this->cycle_delay_ = cycle_delay;
+    this->has_cycle_delay_ = true;
+    this->publish_field_(LR3_FIELD_CYCLE_DELAY, cycle_delay);
+  }
   if (!this->has_night_light_ || night_light != this->night_light_) {
     this->night_light_ = night_light;
     this->has_night_light_ = true;
     this->publish_field_(LR3_FIELD_NIGHT_LIGHT, night_light ? 1 : 0);
+  }
+  if (!this->has_panel_lockout_ || panel_lockout != this->panel_lockout_) {
+    this->panel_lockout_ = panel_lockout;
+    this->has_panel_lockout_ = true;
+    this->publish_field_(LR3_FIELD_PANEL_LOCKOUT, panel_lockout ? 1 : 0);
   }
 }
 

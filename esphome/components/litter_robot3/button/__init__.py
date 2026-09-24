@@ -21,6 +21,7 @@ LitterRobot3Button = litter_robot3_ns.class_(
 
 _TYPES = {
     "cycle": {"icon": "mdi:restore", "command": "'C'"},
+    "factory_reset": {"icon": "mdi:cog-refresh", "command": "'D'"},
 }
 
 

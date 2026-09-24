@@ -14,4 +14,12 @@ class LitterRobot3StatusTextSensor : public text_sensor::TextSensor,
   void dump_config() override;
 };
 
+class LitterRobot3PowerTypeTextSensor : public text_sensor::TextSensor,
+                                        public Component,
+                                        public Parented<LitterRobot3Component> {
+ public:
+  void setup() override;
+  void dump_config() override;
+};
+
 }  // namespace esphome::litter_robot3

@@ -13,6 +13,9 @@ enum LitterRobot3Field : uint8_t {
   LR3_FIELD_SYSTEM_STATE,
   LR3_FIELD_NIGHT_LIGHT,
   LR3_FIELD_CYCLE_COUNT,
+  LR3_FIELD_POWER_TYPE,
+  LR3_FIELD_CYCLE_DELAY,
+  LR3_FIELD_PANEL_LOCKOUT,
 };
 
 const char *system_state_name(uint8_t state);
@@ -24,6 +27,7 @@ class LitterRobot3Component final : public uart::UARTDevice, public Component {
   void dump_config() override;
 
   void send_command(char command, const char *value = nullptr);
+  void set_cycle_delay(uint8_t minutes);
 
   bool is_powered_on() const { return this->power_state_ == 0; }
   uint8_t system_state() const { return this->system_state_; }
@@ -45,11 +49,17 @@ class LitterRobot3Component final : public uart::UARTDevice, public Component {
   uint8_t system_state_{0};
   bool night_light_{false};
   uint32_t cycle_count_{0};
+  uint8_t power_type_{0};
+  uint8_t cycle_delay_{0};
+  bool panel_lockout_{false};
 
   bool has_power_state_{false};
   bool has_system_state_{false};
   bool has_night_light_{false};
   bool has_cycle_count_{false};
+  bool has_power_type_{false};
+  bool has_cycle_delay_{false};
+  bool has_panel_lockout_{false};
 
   LazyCallbackManager<void(LitterRobot3Field, uint32_t)> status_callback_;
 };

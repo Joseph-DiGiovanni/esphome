@@ -32,6 +32,12 @@ _TYPES = {
         "field": "LR3_FIELD_NIGHT_LIGHT",
         "invert": False,
     },
+    "panel_lockout": {
+        "icon": "mdi:lock",
+        "command": "'L'",
+        "field": "LR3_FIELD_PANEL_LOCKOUT",
+        "invert": False,
+    },
 }
 
 

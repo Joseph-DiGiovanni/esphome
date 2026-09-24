@@ -18,14 +18,29 @@ LitterRobot3StatusTextSensor = litter_robot3_ns.class_(
     cg.Parented.template(LitterRobot3Component),
 )
 
+LitterRobot3PowerTypeTextSensor = litter_robot3_ns.class_(
+    "LitterRobot3PowerTypeTextSensor",
+    text_sensor.TextSensor,
+    cg.Component,
+    cg.Parented.template(LitterRobot3Component),
+)
+
+
+def _text_sensor_schema(class_, **kwargs):
+    return (
+        text_sensor.text_sensor_schema(class_, **kwargs)
+        .extend(LITTER_ROBOT3_DEVICE_SCHEMA)
+        .extend(cv.COMPONENT_SCHEMA)
+    )
+
+
 CONFIG_SCHEMA = cv.typed_schema(
     {
-        "status": (
-            text_sensor.text_sensor_schema(
-                LitterRobot3StatusTextSensor, icon="mdi:information"
-            )
-            .extend(LITTER_ROBOT3_DEVICE_SCHEMA)
-            .extend(cv.COMPONENT_SCHEMA)
+        "status": _text_sensor_schema(
+            LitterRobot3StatusTextSensor, icon="mdi:information"
+        ),
+        "power_type": _text_sensor_schema(
+            LitterRobot3PowerTypeTextSensor, icon="mdi:power-plug"
         ),
     }
 )
