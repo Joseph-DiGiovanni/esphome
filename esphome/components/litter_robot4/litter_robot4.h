@@ -3,15 +3,13 @@
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
-#ifdef USE_TIME
-#include "esphome/components/time/real_time_clock.h"
-#endif
 
 namespace esphome::litter_robot4 {
 
 static const uint8_t FRAME_LENGTH = 7;
 static const uint8_t FRAME_TERMINATOR = 0xFF;
 static const uint8_t MAX_PENDING = 64;
+static const uint8_t MAX_POLL_REGISTERS = 64;
 static const uint32_t PENDING_TIMEOUT = 100;
 
 enum Direction : uint8_t {
@@ -206,18 +204,18 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
   void queue_register_read(Register reg) { this->push_queue_(OP_READ, reg, 0); }
   void queue_register_read(Register reg, uint16_t value) { this->push_queue_(OP_READ, reg, value); }
   void queue_register_write(Register reg, uint16_t value) { this->push_queue_(OP_WRITE, reg, value); }
-  void write_sleep_day_enabled(DayOfWeek day, bool enabled);
 
-  void sync_time();
-#ifdef USE_TIME
-  void set_time_id(time::RealTimeClock *time_id) { this->time_id_ = time_id; }
-#endif
-  template<typename F> void setup_on_register_update_callback(F &&callback) {
+  // Registers registered here are read on link-up. Entities declare the telemetry they depend on.
+  void add_poll_register(Register reg);
+  void request_poll();
+  // Drop link state so the next frame from the PIC re-triggers a poll (e.g. after a factory reset).
+  void mark_pic_unready() { this->pic_ready_ = false; }
+
+  template<typename F> void add_on_register_update_callback(F &&callback) {
     this->on_register_update_callback_.add(std::forward<F>(callback));
   }
 
  protected:
-  void poll_registers_();
   void send_frame_(Operation op, Register reg, uint16_t value);
   bool parse_byte_(uint8_t byte);
   void handle_frame_(Direction dir, Operation op, Register reg, uint16_t value);
@@ -236,12 +234,9 @@ class LitterRobot4Component final : public uart::UARTDevice, public Component {
   uint32_t pending_timestamp_{0};
 
   LazyCallbackManager<void(Register, uint16_t)> on_register_update_callback_;
+  StaticVector<Register, MAX_POLL_REGISTERS> poll_registers_;
 
-  uint16_t sleep_mask_{0};
   bool pic_ready_{false};
-#ifdef USE_TIME
-  time::RealTimeClock *time_id_{nullptr};
-#endif
 };
 
 }  // namespace esphome::litter_robot4

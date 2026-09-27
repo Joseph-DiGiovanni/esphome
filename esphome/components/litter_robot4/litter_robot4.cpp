@@ -5,44 +5,6 @@ namespace esphome::litter_robot4 {
 
 static const char *const TAG = "litter_robot4";
 
-static const Register POLL_REGISTERS[] = {REG_DEBUG,
-                                          REG_POWER_TYPE,
-                                          REG_PANEL_LED,
-                                          REG_CLEAN_CYCLE_DELAY,
-                                          REG_LITTER_HOPPER,
-                                          REG_PANEL_LOCKOUT,
-                                          REG_NIGHT_LIGHT_MODE,
-                                          REG_NIGHT_LIGHT_BRIGHTNESS,
-                                          REG_SLEEP_DAY_MASK,
-                                          REG_SLEEP_SUN,
-                                          REG_WAKE_SUN,
-                                          REG_SLEEP_MON,
-                                          REG_WAKE_MON,
-                                          REG_SLEEP_TUE,
-                                          REG_WAKE_TUE,
-                                          REG_SLEEP_WED,
-                                          REG_WAKE_WED,
-                                          REG_SLEEP_THU,
-                                          REG_WAKE_THU,
-                                          REG_SLEEP_FRI,
-                                          REG_WAKE_FRI,
-                                          REG_SLEEP_SAT,
-                                          REG_WAKE_SAT,
-                                          REG_WIFI_STATUS,
-                                          REG_ROBOT_STATUS,
-                                          REG_FAULT_CODE,
-                                          REG_SLEEPING,
-                                          REG_BONNET_REMOVED,
-                                          REG_NIGHT_LIGHT,
-                                          REG_POWER_CYCLE_COUNT,
-                                          REG_CLEAN_CYCLE_COUNT,
-                                          REG_EMPTY_CYCLE_COUNT,
-                                          REG_FILTER_CYCLE_COUNT,
-                                          REG_WASTE_DRAWER_PCT,
-                                          REG_WASTE_DRAWER_FULL,
-                                          REG_LITTER_LEVEL_RAW,
-                                          REG_CALIBRATED_LITTER_LEVEL_RAW};
-
 static const char *reg_name(Register reg) {
   auto *name = register_name(reg);
   if (name)
@@ -61,11 +23,19 @@ void LitterRobot4Component::loop() {
   this->check_timeouts_();
 }
 
-void LitterRobot4Component::dump_config() {
-  ESP_LOGCONFIG(TAG, "Litter Robot 4:");
-#ifdef USE_TIME
-  ESP_LOGCONFIG(TAG, "  Time sync: %s", this->time_id_ != nullptr ? "Enabled" : "Disabled");
-#endif
+void LitterRobot4Component::dump_config() { ESP_LOGCONFIG(TAG, "Litter Robot 4:"); }
+
+void LitterRobot4Component::add_poll_register(Register reg) {
+  for (auto existing : this->poll_registers_) {
+    if (existing == reg)
+      return;
+  }
+  this->poll_registers_.push_back(reg);
+}
+
+void LitterRobot4Component::request_poll() {
+  for (auto reg : this->poll_registers_)
+    this->queue_register_read(reg);
 }
 
 void LitterRobot4Component::push_queue_(Operation op, Register reg, uint16_t value) {
@@ -86,16 +56,6 @@ void LitterRobot4Component::push_queue_(Operation op, Register reg, uint16_t val
     this->pending_timestamp_ = millis();
     this->send_frame_(op, reg, value);
   }
-}
-
-// Sleep schedule bits are written optimistically to avoid a race condition if multiple switches are toggled quickly.
-void LitterRobot4Component::write_sleep_day_enabled(DayOfWeek day, bool enabled) {
-  if (enabled) {
-    this->sleep_mask_ |= (1 << static_cast<uint8_t>(day));
-  } else {
-    this->sleep_mask_ &= ~(1 << static_cast<uint8_t>(day));
-  }
-  this->queue_register_write(REG_SLEEP_DAY_MASK, this->sleep_mask_);
 }
 
 void LitterRobot4Component::send_frame_(Operation op, Register reg, uint16_t value) {
@@ -159,7 +119,7 @@ void LitterRobot4Component::handle_frame_(Direction dir, Operation op, Register 
   if (!this->pic_ready_) {
     this->pic_ready_ = true;
     ESP_LOGD(TAG, "PIC Ready");
-    this->set_timeout("init_poll", 500, [this] { this->poll_registers_(); });
+    this->set_timeout("init_poll", 500, [this] { this->request_poll(); });
   }
 
   switch (op) {
@@ -176,21 +136,9 @@ void LitterRobot4Component::handle_frame_(Direction dir, Operation op, Register 
       ESP_LOGD(TAG, "Unknown operation 0x%02X", op);
       break;
   }
-
-  if (reg == REG_ROBOT_STATUS && value == STATUS_POWERING_ON) {
-    this->set_timeout("power_on_poll", 3000, [this] { this->poll_registers_(); });
-  }
 }
 
 void LitterRobot4Component::handle_write_(Register reg, uint16_t value) {
-  if (reg == REG_FACTORY_RESET && value == CMD_FACTORY_RESET) {
-    this->pic_ready_ = false;
-  }
-
-  if (reg == REG_SLEEP_DAY_MASK) {
-    this->sleep_mask_ = value;
-  }
-
   ESP_LOGD(TAG, "PIC reported %s as %s", reg_name(reg), format_register_value(reg, value));
   this->send_frame_(OP_WRITE_ACK, reg, value);
   if (this->pending_count_ > 0 && this->pending_queue_[this->pending_head_].op == OP_WRITE &&
@@ -205,10 +153,6 @@ void LitterRobot4Component::handle_read_reply_(Register reg, uint16_t value) {
     ESP_LOGD(TAG, "Unsolicited PIC reply: %s is %s (0x%02X=0x%04X)", reg_name(reg), format_register_value(reg, value),
              reg, value);
     return;
-  }
-
-  if (reg == REG_SLEEP_DAY_MASK) {
-    this->sleep_mask_ = value;
   }
 
   auto &pending_op = this->pending_queue_[this->pending_head_];
@@ -260,33 +204,6 @@ void LitterRobot4Component::check_timeouts_() {
     ESP_LOGW(TAG, "%s for %s timed out", is_write ? "Write" : "Read", reg_name(pending_op.reg));
     this->pop_queue_();
   }
-}
-
-void LitterRobot4Component::poll_registers_() {
-  for (auto reg : POLL_REGISTERS) {
-    this->queue_register_read(reg);
-  }
-}
-
-void LitterRobot4Component::sync_time() {
-#ifdef USE_TIME
-  if (this->time_id_ == nullptr)
-    return;
-  auto now = this->time_id_->now();
-  if (!now.is_valid())
-    return;
-  // ESPHome Time uses Sunday=1, PIC uses Sunday=0.
-  this->queue_register_write(REG_TIME_DOW, now.day_of_week - 1);
-  this->queue_register_write(REG_TIME_HOUR, now.hour);
-  this->queue_register_write(REG_TIME_MINUTE, now.minute);
-  this->queue_register_write(REG_TIME_SECOND, now.second);
-  this->queue_register_write(REG_TIME_DAY, now.day_of_month);
-  this->queue_register_write(REG_TIME_MONTH, now.month);
-  // Original firmware writes only last 2 digits of year.
-  this->queue_register_write(REG_TIME_YEAR, now.year % 100);
-  ESP_LOGD(TAG, "Time synced: %04d-%02d-%02d %02d:%02d:%02d DOW=%d", now.year, now.month, now.day_of_month, now.hour,
-           now.minute, now.second, now.day_of_week - 1);
-#endif
 }
 
 }  // namespace esphome::litter_robot4

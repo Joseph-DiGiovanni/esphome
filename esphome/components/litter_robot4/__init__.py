@@ -1,5 +1,4 @@
 from esphome import automation
-from esphome.automation import maybe_simple_id
 import esphome.codegen as cg
 from esphome.components import time, uart
 import esphome.config_validation as cv
@@ -38,7 +37,6 @@ CONFIG_SCHEMA = (
     cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(LitterRobot4Component),
-            cv.Optional(CONF_TIME_ID): cv.use_id(time.RealTimeClock),
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
@@ -49,16 +47,19 @@ CONFIG_SCHEMA = (
 @automation.register_action(
     "litter_robot4.sync_time",
     LitterRobot4SyncTimeAction,
-    maybe_simple_id(
+    cv.Schema(
         {
-            cv.Required(CONF_ID): cv.use_id(LitterRobot4Component),
+            cv.GenerateID(CONF_LITTER_ROBOT4_ID): cv.use_id(LitterRobot4Component),
+            cv.Required(CONF_TIME_ID): cv.use_id(time.RealTimeClock),
         }
     ),
     synchronous=True,
 )
 async def litter_robot4_sync_time_to_code(config, action_id, template_arg, args):
     var = cg.new_Pvariable(action_id, template_arg)
-    await cg.register_parented(var, config[CONF_ID])
+    await cg.register_parented(var, config[CONF_LITTER_ROBOT4_ID])
+    time_ = await cg.get_variable(config[CONF_TIME_ID])
+    cg.add(var.set_time(time_))
     return var
 
 
@@ -67,6 +68,3 @@ async def to_code(config):
     await cg.register_component(var, config)
     await uart.register_uart_device(var, config)
     cg.add_global(litter_robot4_ns.using)
-    if (time_id := config.get(CONF_TIME_ID)) is not None:
-        time_ = await cg.get_variable(time_id)
-        cg.add(var.set_time_id(time_))

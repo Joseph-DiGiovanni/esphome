@@ -6,7 +6,8 @@ namespace esphome::litter_robot4 {
 static const char *const TAG = "litter_robot4.text_sensor";
 
 void LitterRobot4StatusTextSensor::setup() {
-  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->add_poll_register(REG_ROBOT_STATUS);
+  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg != REG_ROBOT_STATUS)
       return;
     if (auto *name = status_name(value)) {
@@ -18,7 +19,8 @@ void LitterRobot4StatusTextSensor::setup() {
 void LitterRobot4StatusTextSensor::dump_config() { LOG_TEXT_SENSOR("", "Litter Robot 4 Status", this); }
 
 void LitterRobot4PowerTypeTextSensor::setup() {
-  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->add_poll_register(REG_POWER_TYPE);
+  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_POWER_TYPE) {
       this->publish_state(value == 0 ? "AC" : "Battery");
     }
@@ -28,7 +30,10 @@ void LitterRobot4PowerTypeTextSensor::setup() {
 void LitterRobot4PowerTypeTextSensor::dump_config() { LOG_TEXT_SENSOR("", "Litter Robot 4 Power Type", this); }
 
 void LitterRobot4FaultTextSensor::setup() {
-  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->add_poll_register(REG_FAULT_CODE);
+  this->parent_->add_poll_register(REG_BONNET_REMOVED);
+  this->parent_->add_poll_register(REG_ROBOT_STATUS);
+  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg == REG_FAULT_CODE) {
       this->fault_code_ = value;
       this->update_display_();
@@ -68,7 +73,8 @@ void LitterRobot4FaultTextSensor::update_display_() {
 void LitterRobot4FaultTextSensor::dump_config() { LOG_TEXT_SENSOR("", "Litter Robot 4 Fault", this); }
 
 void LitterRobot4HopperStatusTextSensor::setup() {
-  this->parent_->setup_on_register_update_callback([this](Register reg, uint16_t value) {
+  this->parent_->add_poll_register(REG_LITTER_HOPPER);
+  this->parent_->add_on_register_update_callback([this](Register reg, uint16_t value) {
     if (reg != REG_LITTER_HOPPER)
       return;
     switch (value) {

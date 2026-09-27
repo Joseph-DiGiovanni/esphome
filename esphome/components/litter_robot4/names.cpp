@@ -315,7 +315,7 @@ const char *format_register_value(Register reg, uint16_t value) {
             case LITTER_HOPPER_STOPPED_HIGH:
               snprintf(hopper_buf, sizeof(hopper_buf), "Dispense complete (0x%04X)", value);
               return hopper_buf;
-        }
+          }
       }
       break;
     }

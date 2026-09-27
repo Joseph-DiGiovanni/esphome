@@ -10,12 +10,18 @@ class LitterRobot4CommandButton : public button::Button, public Component, publi
  public:
   void set_register(Register reg) { this->register_ = reg; }
   void set_command(uint16_t command) { this->command_ = command; }
-  void press_action() override { this->parent_->queue_register_write(this->register_, this->command_); }
+  void set_resets_link(bool resets_link) { this->resets_link_ = resets_link; }
+  void press_action() override {
+    this->parent_->queue_register_write(this->register_, this->command_);
+    if (this->resets_link_)
+      this->parent_->mark_pic_unready();
+  }
   void dump_config() override;
 
  protected:
   Register register_{};
   uint16_t command_{0};
+  bool resets_link_{false};
 };
 
 }  // namespace esphome::litter_robot4

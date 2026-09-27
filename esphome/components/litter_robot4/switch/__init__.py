@@ -2,6 +2,7 @@ import esphome.codegen as cg
 from esphome.components import switch
 import esphome.config_validation as cv
 from esphome.const import CONF_TYPE, ENTITY_CATEGORY_CONFIG, ENTITY_CATEGORY_DIAGNOSTIC
+from esphome.core import CORE, ID
 
 from .. import (
     CONF_LITTER_ROBOT4_ID,
@@ -13,6 +14,10 @@ from .. import (
 DEPENDENCIES = ["litter_robot4"]
 
 ICON_LOCK = "mdi:lock"
+
+_SLEEP_SCHEDULES_KEY = "litter_robot4_sleep_schedules"
+
+LitterRobot4SleepSchedule = litter_robot4_ns.class_("LitterRobot4SleepSchedule")
 
 LitterRobot4BoolSwitch = litter_robot4_ns.class_(
     "LitterRobot4BoolSwitch",
@@ -107,6 +112,18 @@ CONFIG_SCHEMA = cv.typed_schema(
 )
 
 
+async def _get_sleep_schedule(parent_id: str, parent):
+    """Return the single shared sleep-schedule coordinator for this hub."""
+    schedules = CORE.data.setdefault(_SLEEP_SCHEDULES_KEY, {})
+    if (schedule := schedules.get(parent_id)) is not None:
+        return schedule
+    schedule_id = ID(f"{parent_id}_sleep_schedule", type=LitterRobot4SleepSchedule)
+    schedule = cg.new_Pvariable(schedule_id)
+    await cg.register_parented(schedule, parent)
+    schedules[parent_id] = schedule
+    return schedule
+
+
 async def to_code(config):
     parent = await cg.get_variable(config[CONF_LITTER_ROBOT4_ID])
     var = await switch.new_switch(config)
@@ -114,5 +131,7 @@ async def to_code(config):
     await cg.register_parented(var, parent)
     if config[CONF_TYPE] in DAY_TYPES:
         cg.add(var.set_day(cg.RawExpression(DAY_TYPES[config[CONF_TYPE]])))
+        schedule = await _get_sleep_schedule(str(config[CONF_LITTER_ROBOT4_ID]), parent)
+        cg.add(var.set_schedule(schedule))
     if config[CONF_TYPE] in _BOOL_REGISTERS:
         cg.add(var.set_register(cg.RawExpression(_BOOL_REGISTERS[config[CONF_TYPE]])))

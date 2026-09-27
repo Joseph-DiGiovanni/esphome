@@ -62,3 +62,5 @@ async def to_code(config):
     reg, cmd = _COMMANDS[config[CONF_TYPE]]
     cg.add(var.set_register(cg.RawExpression(reg)))
     cg.add(var.set_command(cg.RawExpression(cmd)))
+    if config[CONF_TYPE] == "factory_reset":
+        cg.add(var.set_resets_link(True))

@@ -6,7 +6,6 @@ api:
 
 litter_robot4:
   id: my_litter_robot4
-  time_id: ha_time
 
 time:
   - platform: homeassistant
@@ -16,7 +15,8 @@ time:
 interval:
   - interval: 24h
     then:
-      - litter_robot4.sync_time: my_litter_robot4
+      - litter_robot4.sync_time:
+          time_id: ha_time
 
 text_sensor:
   - platform: litter_robot4
