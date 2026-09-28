@@ -12,6 +12,9 @@ class LitterRobot3StatusTextSensor : public text_sensor::TextSensor,
  public:
   void setup() override;
   void dump_config() override;
+
+ protected:
+  Deduplicator<uint32_t> publish_dedup_;
 };
 
 class LitterRobot3PowerTypeTextSensor : public text_sensor::TextSensor,
@@ -20,6 +23,9 @@ class LitterRobot3PowerTypeTextSensor : public text_sensor::TextSensor,
  public:
   void setup() override;
   void dump_config() override;
+
+ protected:
+  Deduplicator<uint32_t> publish_dedup_;
 };
 
 }  // namespace esphome::litter_robot3

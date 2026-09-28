@@ -13,6 +13,8 @@ class LitterRobot3CycleDelaySelect : public select::Select, public Component, pu
 
  protected:
   void control(size_t index) override;
+
+  Deduplicator<uint32_t> publish_dedup_;
 };
 
 }  // namespace esphome::litter_robot3

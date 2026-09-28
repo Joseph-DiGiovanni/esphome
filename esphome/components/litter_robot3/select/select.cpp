@@ -12,7 +12,7 @@ static const size_t CYCLE_DELAY_OPTIONS = sizeof(CYCLE_DELAY_MINUTES) / sizeof(C
 
 void LitterRobot3CycleDelaySelect::setup() {
   this->parent_->add_status_callback([this](LitterRobot3Field field, uint32_t value) {
-    if (field != LR3_FIELD_CYCLE_DELAY)
+    if (field != LR3_FIELD_CYCLE_DELAY || !this->publish_dedup_.next(value))
       return;
     for (size_t i = 0; i < CYCLE_DELAY_OPTIONS; i++) {
       if (CYCLE_DELAY_MINUTES[i] == value) {

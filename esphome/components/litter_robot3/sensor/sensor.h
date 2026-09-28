@@ -10,6 +10,9 @@ class LitterRobot3CycleCountSensor : public sensor::Sensor, public Component, pu
  public:
   void setup() override;
   void dump_config() override;
+
+ protected:
+  Deduplicator<uint32_t> publish_dedup_;
 };
 
 }  // namespace esphome::litter_robot3

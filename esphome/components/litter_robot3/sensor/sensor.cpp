@@ -8,7 +8,7 @@ static const char *const TAG = "litter_robot3.sensor";
 
 void LitterRobot3CycleCountSensor::setup() {
   this->parent_->add_status_callback([this](LitterRobot3Field field, uint32_t value) {
-    if (field == LR3_FIELD_CYCLE_COUNT)
+    if (field == LR3_FIELD_CYCLE_COUNT && this->publish_dedup_.next(value))
       this->publish_state(value);
   });
 }

@@ -182,43 +182,13 @@ void LitterRobot3Component::handle_status_(char *line) {
     return;
   }
 
-  uint8_t power_type = static_cast<uint8_t>(tokens[0][1] - '0');
-  uint8_t power_state = static_cast<uint8_t>(tokens[1][0] - '0');
-  uint8_t system_state = parse_hex_char(tokens[1][1]);
-  uint8_t cycle_delay = parse_hex_char(tokens[2][0]);
-  bool night_light = tokens[3][0] != '0';
-  bool panel_lockout = tokens[5][0] != '0';
-
-  if (!this->has_power_type_ || power_type != this->power_type_) {
-    this->power_type_ = power_type;
-    this->has_power_type_ = true;
-    this->publish_field_(LR3_FIELD_POWER_TYPE, power_type);
-  }
-  if (!this->has_power_state_ || power_state != this->power_state_) {
-    this->power_state_ = power_state;
-    this->has_power_state_ = true;
-    this->publish_field_(LR3_FIELD_POWER_STATE, power_state);
-  }
-  if (!this->has_system_state_ || system_state != this->system_state_) {
-    this->system_state_ = system_state;
-    this->has_system_state_ = true;
-    this->publish_field_(LR3_FIELD_SYSTEM_STATE, system_state);
-  }
-  if (!this->has_cycle_delay_ || cycle_delay != this->cycle_delay_) {
-    this->cycle_delay_ = cycle_delay;
-    this->has_cycle_delay_ = true;
-    this->publish_field_(LR3_FIELD_CYCLE_DELAY, cycle_delay);
-  }
-  if (!this->has_night_light_ || night_light != this->night_light_) {
-    this->night_light_ = night_light;
-    this->has_night_light_ = true;
-    this->publish_field_(LR3_FIELD_NIGHT_LIGHT, night_light ? 1 : 0);
-  }
-  if (!this->has_panel_lockout_ || panel_lockout != this->panel_lockout_) {
-    this->panel_lockout_ = panel_lockout;
-    this->has_panel_lockout_ = true;
-    this->publish_field_(LR3_FIELD_PANEL_LOCKOUT, panel_lockout ? 1 : 0);
-  }
+  // Fields: )P XS W N [1hh:mm:ss] L ZCCC
+  this->status_callback_.call(LR3_FIELD_POWER_TYPE, static_cast<uint8_t>(tokens[0][1] - '0'));
+  this->status_callback_.call(LR3_FIELD_POWER_STATE, static_cast<uint8_t>(tokens[1][0] - '0'));
+  this->status_callback_.call(LR3_FIELD_SYSTEM_STATE, parse_hex_char(tokens[1][1]));
+  this->status_callback_.call(LR3_FIELD_CYCLE_DELAY, parse_hex_char(tokens[2][0]));
+  this->status_callback_.call(LR3_FIELD_NIGHT_LIGHT, tokens[3][0] != '0' ? 1 : 0);
+  this->status_callback_.call(LR3_FIELD_PANEL_LOCKOUT, tokens[5][0] != '0' ? 1 : 0);
 }
 
 void LitterRobot3Component::handle_cycle_count_(const char *value) {
@@ -226,15 +196,7 @@ void LitterRobot3Component::handle_cycle_count_(const char *value) {
   unsigned long count = strtoul(value, &end, 16);
   if (end == value)
     return;
-  if (this->has_cycle_count_ && count == this->cycle_count_)
-    return;
-  this->cycle_count_ = static_cast<uint32_t>(count);
-  this->has_cycle_count_ = true;
-  this->publish_field_(LR3_FIELD_CYCLE_COUNT, this->cycle_count_);
-}
-
-void LitterRobot3Component::publish_field_(LitterRobot3Field field, uint32_t value) {
-  this->status_callback_.call(field, value);
+  this->status_callback_.call(LR3_FIELD_CYCLE_COUNT, static_cast<uint32_t>(count));
 }
 
 }  // namespace esphome::litter_robot3
