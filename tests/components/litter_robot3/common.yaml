@@ -20,11 +20,10 @@ sensor:
     type: waste_drawer_cycle_count
     name: "Waste Drawer Cycles"
 
-number:
+select:
   - platform: litter_robot3
     type: cycle_delay
     name: "Cycle Delay"
-    mode: slider
 
 switch:
   - platform: litter_robot3

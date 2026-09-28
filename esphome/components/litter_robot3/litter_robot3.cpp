@@ -26,22 +26,6 @@ static size_t split_tokens(char *line, char *tokens[], size_t max_tokens) {
   return count;
 }
 
-static uint8_t hex_digit_value(char c) {
-  if (c >= '0' && c <= '9')
-    return static_cast<uint8_t>(c - '0');
-  if (c >= 'A' && c <= 'F')
-    return static_cast<uint8_t>(c - 'A' + 10);
-  if (c >= 'a' && c <= 'f')
-    return static_cast<uint8_t>(c - 'a' + 10);
-  return 0;
-}
-
-static uint8_t cycle_delay_minutes(char code) { return hex_digit_value(code); }
-
-static char cycle_delay_code(uint8_t minutes) {
-  return minutes < 10 ? static_cast<char>('0' + minutes) : static_cast<char>('A' + (minutes - 10));
-}
-
 const char *system_state_name(uint8_t state) {
   switch (state) {
     case 1:
@@ -88,9 +72,9 @@ void LitterRobot3Component::send_command(char command, const char *value) {
 }
 
 void LitterRobot3Component::set_cycle_delay(uint8_t minutes) {
-  if (minutes < 3 || minutes > 15)
+  if (minutes > 15)
     return;
-  char value[2] = {cycle_delay_code(minutes), '\0'};
+  char value[2] = {format_hex_pretty_char(minutes), '\0'};
   this->send_command('W', value);
 }
 
@@ -139,8 +123,8 @@ void LitterRobot3Component::handle_status_(char *line) {
 
   uint8_t power_type = static_cast<uint8_t>(tokens[0][1] - '0');
   uint8_t power_state = static_cast<uint8_t>(tokens[1][0] - '0');
-  uint8_t system_state = hex_digit_value(tokens[1][1]);
-  uint8_t cycle_delay = cycle_delay_minutes(tokens[2][0]);
+  uint8_t system_state = parse_hex_char(tokens[1][1]);
+  uint8_t cycle_delay = parse_hex_char(tokens[2][0]);
   bool night_light = tokens[3][0] != '0';
   bool panel_lockout = tokens[5][0] != '0';
 
