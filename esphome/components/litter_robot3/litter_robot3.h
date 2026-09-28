@@ -18,6 +18,8 @@ enum LitterRobot3Field : uint8_t {
   LR3_FIELD_PANEL_LOCKOUT,
 };
 
+const char *command_name(char command);
+const char *command_value_name(char command, const char *value);
 const char *system_state_name(uint8_t state);
 
 class LitterRobot3Component final : public uart::UARTDevice, public Component {

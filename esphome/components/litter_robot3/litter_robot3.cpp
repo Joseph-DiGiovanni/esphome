@@ -27,52 +27,6 @@ static size_t split_tokens(char *line, char *tokens[], size_t max_tokens) {
   return count;
 }
 
-static const char *command_name(char command) {
-  switch (command) {
-    case 'C':
-      return "Clean cycle";
-    case 'D':
-      return "Factory reset";
-    case 'F':
-      return "Handshake";
-    case 'L':
-      return "Panel lockout";
-    case 'N':
-      return "Night light";
-    case 'P':
-      return "Power";
-    case 'R':
-      return "Reset waste gauge";
-    case 'S':
-      return "Sleep schedule";
-    case 'W':
-      return "Cycle delay";
-    default:
-      return "Unknown command";
-  }
-}
-
-const char *system_state_name(uint8_t state) {
-  switch (state) {
-    case 1:
-      return "Ready";
-    case 2:
-      return "Cat detected";
-    case 3:
-      return "Clean cycle in progress";
-    case 5:
-      return "Cycle interrupted";
-    case 6:
-      return "Cycle paused";
-    case 7:
-      return "Bonnet removed";
-    case 8:
-      return "Pinch detected";
-    default:
-      return nullptr;
-  }
-}
-
 void LitterRobot3Component::setup() {
   // Mirror the stock firmware, which announces itself to the PIC about a second
   // after every reset.  Delayed so the PIC is ready to receive it.
@@ -91,10 +45,11 @@ void LitterRobot3Component::send_command(char command, const char *value) {
   if (length <= 0 || length >= static_cast<int>(sizeof(buffer)))
     return;
   this->write_array(reinterpret_cast<const uint8_t *>(buffer), length);
-  if (value != nullptr)
-    ESP_LOGD(TAG, "Sent )%c%s", command, value);
-  else
-    ESP_LOGD(TAG, "Sent )%c", command);
+  if (value == nullptr || command == 'F') {
+    ESP_LOGD(TAG, "ESP sent %s", command_name(command));
+  } else {
+    ESP_LOGD(TAG, "ESP set %s to %s", command_name(command), command_value_name(command, value));
+  }
 }
 
 void LitterRobot3Component::set_cycle_delay(uint8_t minutes) {
@@ -135,17 +90,17 @@ void LitterRobot3Component::handle_response_(const char *response) {
   // '(' replies "({cmd}AOK" on success or "({cmd}NOK{reason}" on failure.
   char command = response[0];
   if (command == '\0') {
-    ESP_LOGW(TAG, "Empty command response");
+    ESP_LOGW(TAG, "PIC sent an empty command response");
     return;
   }
 
   const char *result = &response[1];
   if (strncmp(result, "AOK", 3) == 0) {
-    ESP_LOGD(TAG, "%s accepted", command_name(command));
+    ESP_LOGD(TAG, "PIC acknowledged %s", command_name(command));
     return;
   }
   if (strncmp(result, "NOK", 3) == 0) {
-    ESP_LOGW(TAG, "%s rejected (reason %d)", command_name(command), atoi(&result[3]));
+    ESP_LOGW(TAG, "PIC rejected %s (%d)", command_name(command), atoi(&result[3]));
     return;
   }
 
@@ -176,9 +131,15 @@ void LitterRobot3Component::handle_line_(char *line) {
 }
 
 void LitterRobot3Component::handle_status_(char *line) {
+  // split_tokens() terminates each field in place, so keep the raw line for logging.
+  char raw[LINE_BUFFER_SIZE];
+  snprintf(raw, sizeof(raw), "%s", line);
+
+  ESP_LOGD(TAG, "PIC reported current status %s", raw);
+
   char *tokens[7];
   if (split_tokens(line, tokens, 7) < 7) {
-    ESP_LOGW(TAG, "Malformed status packet: %s", line);
+    ESP_LOGW(TAG, "Malformed status packet: %s", raw);
     return;
   }
 
@@ -194,8 +155,11 @@ void LitterRobot3Component::handle_status_(char *line) {
 void LitterRobot3Component::handle_cycle_count_(const char *value) {
   char *end = nullptr;
   unsigned long count = strtoul(value, &end, 16);
-  if (end == value)
+  if (end == value) {
+    ESP_LOGW(TAG, "Malformed cycle count packet: )Y%s", value);
     return;
+  }
+  ESP_LOGD(TAG, "PIC reported cycle count %lu", count);
   this->status_callback_.call(LR3_FIELD_CYCLE_COUNT, static_cast<uint32_t>(count));
 }
 
