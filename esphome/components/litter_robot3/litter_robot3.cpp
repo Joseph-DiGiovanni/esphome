@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include "esphome/core/log.h"
 
@@ -24,6 +25,31 @@ static size_t split_tokens(char *line, char *tokens[], size_t max_tokens) {
       *p++ = '\0';
   }
   return count;
+}
+
+static const char *command_name(char command) {
+  switch (command) {
+    case 'C':
+      return "Clean cycle";
+    case 'D':
+      return "Factory reset";
+    case 'F':
+      return "Handshake";
+    case 'L':
+      return "Panel lockout";
+    case 'N':
+      return "Night light";
+    case 'P':
+      return "Power";
+    case 'R':
+      return "Reset waste gauge";
+    case 'S':
+      return "Sleep schedule";
+    case 'W':
+      return "Cycle delay";
+    default:
+      return "Unknown command";
+  }
 }
 
 const char *system_state_name(uint8_t state) {
@@ -81,37 +107,72 @@ void LitterRobot3Component::set_cycle_delay(uint8_t minutes) {
 void LitterRobot3Component::loop() {
   while (this->available()) {
     char c = static_cast<char>(this->read());
+
+    // Frames end with "\r\n"; only '\n' marks the end of a line.
     if (c == '\r')
       continue;
-    if (c == '\n') {
-      if (this->rx_len_ > 0) {
-        this->rx_line_[this->rx_len_] = '\0';
-        this->handle_line_(this->rx_line_);
+
+    if (c != '\n') {
+      if (this->rx_len_ < sizeof(this->rx_line_) - 1) {
+        this->rx_line_[this->rx_len_++] = c;
+      } else {
+        // Frame too long for the buffer: drop it and resync on the next newline.
+        this->rx_len_ = 0;
       }
-      this->rx_len_ = 0;
-    } else if (this->rx_len_ < sizeof(this->rx_line_) - 1) {
-      this->rx_line_[this->rx_len_++] = c;
-    } else {
-      // Line longer than expected, drop it.
-      this->rx_len_ = 0;
+      continue;
     }
+
+    // End of line: dispatch if non-empty, then start collecting the next one.
+    if (this->rx_len_ > 0) {
+      this->rx_line_[this->rx_len_] = '\0';
+      this->handle_line_(this->rx_line_);
+    }
+    this->rx_len_ = 0;
   }
 }
 
-void LitterRobot3Component::handle_line_(char *line) {
-  if (line[0] == ')') {
-    if (line[1] == 'Y') {
-      this->handle_cycle_count_(&line[2]);
-    } else if (line[1] == '0' || line[1] == '1') {
-      this->handle_status_(line);
-    } else {
-      ESP_LOGD(TAG, "Unhandled message: %s", line);
-    }
-  } else if (line[0] == '(') {
-    ESP_LOGD(TAG, "Response: %s", line);
-  } else {
-    ESP_LOGV(TAG, "Ignoring: %s", line);
+void LitterRobot3Component::handle_response_(const char *response) {
+  // '(' replies "({cmd}AOK" on success or "({cmd}NOK{reason}" on failure.
+  char command = response[0];
+  if (command == '\0') {
+    ESP_LOGW(TAG, "Empty command response");
+    return;
   }
+
+  const char *result = &response[1];
+  if (strncmp(result, "AOK", 3) == 0) {
+    ESP_LOGD(TAG, "%s accepted", command_name(command));
+    return;
+  }
+  if (strncmp(result, "NOK", 3) == 0) {
+    ESP_LOGW(TAG, "%s rejected (reason %d)", command_name(command), atoi(&result[3]));
+    return;
+  }
+
+  ESP_LOGW(TAG, "Unexpected command response: (%s", response);
+}
+
+void LitterRobot3Component::handle_line_(char *line) {
+  // '(' is a command acknowledgement from the PIC, e.g. "(CAOK" or "(CNOK4".
+  if (line[0] == '(') {
+    this->handle_response_(&line[1]);
+    return;
+  }
+
+  // ")Y####" is sent mid clean cycle and carries the cycle count.
+  if (line[0] == ')' && line[1] == 'Y') {
+    this->handle_cycle_count_(&line[2]);
+    return;
+  }
+
+  // A status frame starts at the power-supply field, so the character after ')' is
+  // '0' (AC) or '1' (battery). Pass the whole line so the field indices stay aligned.
+  if (line[0] == ')' && (line[1] == '0' || line[1] == '1')) {
+    this->handle_status_(line);
+    return;
+  }
+
+  ESP_LOGD(TAG, "Unexpected message format: %s", line);
 }
 
 void LitterRobot3Component::handle_status_(char *line) {

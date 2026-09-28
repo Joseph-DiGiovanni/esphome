@@ -38,6 +38,7 @@ class LitterRobot3Component final : public uart::UARTDevice, public Component {
 
  protected:
   void handle_line_(char *line);
+  void handle_response_(const char *response);
   void handle_status_(char *line);
   void handle_cycle_count_(const char *value);
   void publish_field_(LitterRobot3Field field, uint32_t value);
