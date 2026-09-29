@@ -59,6 +59,15 @@ void LitterRobot3Component::set_cycle_delay(uint8_t minutes) {
   this->send_command('W', value);
 }
 
+void LitterRobot3Component::set_sleep(uint32_t seconds) {
+  // The value is the current position in the 24h sleep cycle, not a wall-clock time.
+  char value[16];
+  snprintf(value, sizeof(value), "1%02u:%02u:%02u", seconds / 3600, (seconds / 60) % 60, seconds % 60);
+  this->send_command('S', value);
+}
+
+void LitterRobot3Component::disable_sleep() { this->send_command('S', "0"); }
+
 void LitterRobot3Component::loop() {
   while (this->available()) {
     char c = static_cast<char>(this->read());
@@ -149,6 +158,7 @@ void LitterRobot3Component::handle_status_(char *line) {
   this->status_callback_.call(LR3_FIELD_SYSTEM_STATE, parse_hex_char(tokens[1][1]));
   this->status_callback_.call(LR3_FIELD_CYCLE_DELAY, parse_hex_char(tokens[2][0]));
   this->status_callback_.call(LR3_FIELD_NIGHT_LIGHT, tokens[3][0] != '0' ? 1 : 0);
+  this->status_callback_.call(LR3_FIELD_SLEEP_ENABLED, tokens[4][0] != '0' ? 1 : 0);
   this->status_callback_.call(LR3_FIELD_PANEL_LOCKOUT, tokens[5][0] != '0' ? 1 : 0);
 }
 

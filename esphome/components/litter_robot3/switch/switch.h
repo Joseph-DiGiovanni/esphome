@@ -22,4 +22,13 @@ class LitterRobot3Switch : public switch_::Switch, public Component, public Pare
   bool invert_{false};
 };
 
+class LitterRobot3SleepSwitch : public switch_::Switch, public Component, public Parented<LitterRobot3Component> {
+ public:
+  void setup() override;
+  void dump_config() override;
+
+ protected:
+  void write_state(bool state) override;
+};
+
 }  // namespace esphome::litter_robot3

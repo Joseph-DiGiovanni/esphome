@@ -1,3 +1,4 @@
+from esphome import automation
 import esphome.codegen as cg
 from esphome.components import uart
 import esphome.config_validation as cv
@@ -20,8 +21,12 @@ litter_robot3_ns = cg.esphome_ns.namespace("litter_robot3")
 LitterRobot3Component = litter_robot3_ns.class_(
     "LitterRobot3Component", uart.UARTDevice, cg.Component
 )
+LitterRobot3SetSleepAction = litter_robot3_ns.class_(
+    "LitterRobot3SetSleepAction", automation.Action
+)
 
 CONF_LITTER_ROBOT3_ID = "litter_robot3_id"
+CONF_OFFSET = "offset"
 
 LITTER_ROBOT3_DEVICE_SCHEMA = cv.Schema(
     {
@@ -38,6 +43,26 @@ CONFIG_SCHEMA = (
     .extend(cv.COMPONENT_SCHEMA)
     .extend(uart.UART_DEVICE_SCHEMA)
 )
+
+
+@automation.register_action(
+    "litter_robot3.set_sleep",
+    LitterRobot3SetSleepAction,
+    cv.maybe_simple_value(
+        {
+            cv.GenerateID(CONF_LITTER_ROBOT3_ID): cv.use_id(LitterRobot3Component),
+            cv.Required(CONF_OFFSET): cv.templatable(cv.int_range(min=0, max=86399)),
+        },
+        key=CONF_OFFSET,
+    ),
+    synchronous=True,
+)
+async def litter_robot3_set_sleep_to_code(config, action_id, template_arg, args):
+    var = cg.new_Pvariable(action_id, template_arg)
+    await cg.register_parented(var, config[CONF_LITTER_ROBOT3_ID])
+    offset = await cg.templatable(config[CONF_OFFSET], args, cg.uint32)
+    cg.add(var.set_offset(offset))
+    return var
 
 
 async def to_code(config):

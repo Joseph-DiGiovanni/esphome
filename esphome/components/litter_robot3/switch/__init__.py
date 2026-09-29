@@ -18,6 +18,12 @@ LitterRobot3Switch = litter_robot3_ns.class_(
     cg.Component,
     cg.Parented.template(LitterRobot3Component),
 )
+LitterRobot3SleepSwitch = litter_robot3_ns.class_(
+    "LitterRobot3SleepSwitch",
+    switch.Switch,
+    cg.Component,
+    cg.Parented.template(LitterRobot3Component),
+)
 
 _TYPES = {
     "power": {
@@ -41,19 +47,25 @@ _TYPES = {
 }
 
 
-def _switch_schema(*, icon=None):
+def _switch_schema(class_, *, icon=None):
     kwargs = {}
     if icon is not None:
         kwargs["icon"] = icon
     return (
-        switch.switch_schema(LitterRobot3Switch, **kwargs)
+        switch.switch_schema(class_, **kwargs)
         .extend(LITTER_ROBOT3_DEVICE_SCHEMA)
         .extend(cv.COMPONENT_SCHEMA)
     )
 
 
 CONFIG_SCHEMA = cv.typed_schema(
-    {key: _switch_schema(icon=cfg["icon"]) for key, cfg in _TYPES.items()}
+    {
+        **{
+            key: _switch_schema(LitterRobot3Switch, icon=cfg["icon"])
+            for key, cfg in _TYPES.items()
+        },
+        "sleep": _switch_schema(LitterRobot3SleepSwitch, icon="mdi:sleep"),
+    }
 )
 
 
@@ -62,6 +74,8 @@ async def to_code(config):
     var = await switch.new_switch(config)
     await cg.register_component(var, config)
     await cg.register_parented(var, parent)
+    if config[CONF_TYPE] == "sleep":
+        return
     cfg = _TYPES[config[CONF_TYPE]]
     cg.add(var.set_command(cg.RawExpression(cfg["command"])))
     cg.add(var.set_field(cg.RawExpression(cfg["field"])))

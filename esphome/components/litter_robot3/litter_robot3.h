@@ -16,6 +16,7 @@ enum LitterRobot3Field : uint8_t {
   LR3_FIELD_POWER_TYPE,
   LR3_FIELD_CYCLE_DELAY,
   LR3_FIELD_PANEL_LOCKOUT,
+  LR3_FIELD_SLEEP_ENABLED,
 };
 
 const char *command_name(char command);
@@ -30,6 +31,8 @@ class LitterRobot3Component final : public uart::UARTDevice, public Component {
 
   void send_command(char command, const char *value = nullptr);
   void set_cycle_delay(uint8_t minutes);
+  void set_sleep(uint32_t seconds);
+  void disable_sleep();
 
   // Parsed fields are broadcast as (field, value); consumers own their own state.
   template<typename F> void add_status_callback(F &&callback) { this->status_callback_.add(std::forward<F>(callback)); }

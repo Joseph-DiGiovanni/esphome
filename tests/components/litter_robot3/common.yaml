@@ -35,6 +35,9 @@ switch:
   - platform: litter_robot3
     type: panel_lockout
     name: "Panel Lockout"
+  - platform: litter_robot3
+    type: sleep
+    name: "Sleep"
 
 button:
   - platform: litter_robot3
@@ -43,3 +46,9 @@ button:
   - platform: litter_robot3
     type: factory_reset
     name: "Factory Reset"
+
+interval:
+  - interval: 24h
+    then:
+      - litter_robot3.set_sleep:
+          offset: 3600
