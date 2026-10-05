@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
@@ -11,6 +13,7 @@ static const uint8_t FRAME_TERMINATOR = 0xFF;
 static const uint8_t MAX_PENDING = 64;
 static const uint8_t MAX_POLL_REGISTERS = 64;
 static const uint32_t PENDING_TIMEOUT = 100;
+static const size_t FORMAT_BUFFER_SIZE = 48;
 
 enum Direction : uint8_t {
   DIR_FROM_PIC = 0x01,
@@ -189,7 +192,7 @@ const char *night_light_mode_name(uint16_t value);
 uint16_t brightness_value(const char *name);
 uint16_t night_light_mode_value(const char *name);
 uint16_t panel_brightness_value(const char *name);
-const char *format_register_value(Register reg, uint16_t value);
+const char *format_register_value(Register reg, uint16_t value, char *buf, size_t buf_size);
 
 struct PendingOperation {
   Operation op{};

@@ -5,13 +5,12 @@ namespace esphome::litter_robot4 {
 
 static const char *const TAG = "litter_robot4";
 
-static const char *reg_name(Register reg) {
+static const char *reg_name(Register reg, char *buf, size_t buf_size) {
   auto *name = register_name(reg);
   if (name)
     return name;
-  static char unknown_buf[16];
-  snprintf(unknown_buf, sizeof(unknown_buf), "Unknown (0x%02X)", static_cast<uint8_t>(reg));
-  return unknown_buf;
+  snprintf(buf, buf_size, "Unknown (0x%02X)", static_cast<uint8_t>(reg));
+  return buf;
 }
 
 void LitterRobot4Component::loop() {
@@ -41,7 +40,9 @@ void LitterRobot4Component::request_poll() {
 void LitterRobot4Component::push_queue_(Operation op, Register reg, uint16_t value) {
   bool is_write = op == OP_WRITE;
   if (this->pending_count_ >= MAX_PENDING) {
-    ESP_LOGW(TAG, "Queue full, dropping %s for %s (0x%02X)", is_write ? "write" : "read", reg_name(reg), reg);
+    char name[FORMAT_BUFFER_SIZE];
+    ESP_LOGW(TAG, "Queue full, dropping %s for %s (0x%02X)", is_write ? "write" : "read",
+             reg_name(reg, name, sizeof(name)), reg);
     return;
   }
 
@@ -60,9 +61,13 @@ void LitterRobot4Component::push_queue_(Operation op, Register reg, uint16_t val
 
 void LitterRobot4Component::send_frame_(Operation op, Register reg, uint16_t value) {
   if (op == OP_READ) {
-    ESP_LOGD(TAG, "ESP queried %s", reg_name(reg));
+    char name[FORMAT_BUFFER_SIZE];
+    ESP_LOGD(TAG, "ESP queried %s", reg_name(reg, name, sizeof(name)));
   } else if (op == OP_WRITE) {
-    ESP_LOGD(TAG, "ESP set %s to %s", reg_name(reg), format_register_value(reg, value));
+    char name[FORMAT_BUFFER_SIZE];
+    char value_str[FORMAT_BUFFER_SIZE];
+    ESP_LOGD(TAG, "ESP set %s to %s", reg_name(reg, name, sizeof(name)),
+             format_register_value(reg, value, value_str, sizeof(value_str)));
   }
   uint8_t value_high = static_cast<uint8_t>(value >> 8);
   uint8_t value_low = static_cast<uint8_t>(value & 0xFF);
@@ -139,7 +144,10 @@ void LitterRobot4Component::handle_frame_(Direction dir, Operation op, Register 
 }
 
 void LitterRobot4Component::handle_write_(Register reg, uint16_t value) {
-  ESP_LOGD(TAG, "PIC reported %s as %s", reg_name(reg), format_register_value(reg, value));
+  char name[FORMAT_BUFFER_SIZE];
+  char value_str[FORMAT_BUFFER_SIZE];
+  ESP_LOGD(TAG, "PIC reported %s as %s", reg_name(reg, name, sizeof(name)),
+           format_register_value(reg, value, value_str, sizeof(value_str)));
   this->send_frame_(OP_WRITE_ACK, reg, value);
   if (this->pending_count_ > 0 && this->pending_queue_[this->pending_head_].op == OP_WRITE &&
       this->pending_queue_[this->pending_head_].reg == reg) {
@@ -150,31 +158,46 @@ void LitterRobot4Component::handle_write_(Register reg, uint16_t value) {
 
 void LitterRobot4Component::handle_read_reply_(Register reg, uint16_t value) {
   if (this->pending_count_ == 0) {
-    ESP_LOGD(TAG, "Unsolicited PIC reply: %s is %s (0x%02X=0x%04X)", reg_name(reg), format_register_value(reg, value),
-             reg, value);
+    char name[FORMAT_BUFFER_SIZE];
+    char value_str[FORMAT_BUFFER_SIZE];
+    ESP_LOGD(TAG, "Unsolicited PIC reply: %s is %s (0x%02X=0x%04X)", reg_name(reg, name, sizeof(name)),
+             format_register_value(reg, value, value_str, sizeof(value_str)), reg, value);
     return;
   }
 
   auto &pending_op = this->pending_queue_[this->pending_head_];
   if (pending_op.op == OP_WRITE) {
-    ESP_LOGW(TAG, "PIC replied %s is %s but a write was expected (0x%02X=0x%04X)", reg_name(reg),
-             format_register_value(reg, value), reg, value);
+    char name[FORMAT_BUFFER_SIZE];
+    char value_str[FORMAT_BUFFER_SIZE];
+    ESP_LOGW(TAG, "PIC replied %s is %s but a write was expected (0x%02X=0x%04X)", reg_name(reg, name, sizeof(name)),
+             format_register_value(reg, value, value_str, sizeof(value_str)), reg, value);
     return;
   }
 
   if (pending_op.reg != reg) {
-    ESP_LOGW(TAG, "PIC replied %s is %s but %s was expected (0x%02X=0x%04X vs 0x%02X)", reg_name(reg),
-             format_register_value(reg, value), reg_name(pending_op.reg), reg, value, pending_op.reg);
+    char actual_name[FORMAT_BUFFER_SIZE];
+    char expected_name[FORMAT_BUFFER_SIZE];
+    char value_str[FORMAT_BUFFER_SIZE];
+    ESP_LOGW(TAG, "PIC replied %s is %s but %s was expected (0x%02X=0x%04X vs 0x%02X)",
+             reg_name(reg, actual_name, sizeof(actual_name)),
+             format_register_value(reg, value, value_str, sizeof(value_str)),
+             reg_name(pending_op.reg, expected_name, sizeof(expected_name)), reg, value, pending_op.reg);
   }
 
-  ESP_LOGD(TAG, "PIC replied %s is %s", reg_name(reg), format_register_value(reg, value));
+  char name[FORMAT_BUFFER_SIZE];
+  char value_str[FORMAT_BUFFER_SIZE];
+  ESP_LOGD(TAG, "PIC replied %s is %s", reg_name(reg, name, sizeof(name)),
+           format_register_value(reg, value, value_str, sizeof(value_str)));
 
   this->on_register_update_callback_.call(reg, value);
   this->pop_queue_();
 }
 
 void LitterRobot4Component::handle_write_ack_(Register reg, uint16_t value) {
-  ESP_LOGD(TAG, "PIC acknowledged %s as %s", reg_name(reg), format_register_value(reg, value));
+  char name[FORMAT_BUFFER_SIZE];
+  char value_str[FORMAT_BUFFER_SIZE];
+  ESP_LOGD(TAG, "PIC acknowledged %s as %s", reg_name(reg, name, sizeof(name)),
+           format_register_value(reg, value, value_str, sizeof(value_str)));
 
   this->pop_queue_();
   this->on_register_update_callback_.call(reg, value);
@@ -201,7 +224,9 @@ void LitterRobot4Component::check_timeouts_() {
       break;
     }
     bool is_write = pending_op.op == OP_WRITE;
-    ESP_LOGW(TAG, "%s for %s timed out", is_write ? "Write" : "Read", reg_name(pending_op.reg));
+    char name[FORMAT_BUFFER_SIZE];
+    ESP_LOGW(TAG, "%s for %s timed out", is_write ? "Write" : "Read",
+             reg_name(pending_op.reg, name, sizeof(name)));
     this->pop_queue_();
   }
 }

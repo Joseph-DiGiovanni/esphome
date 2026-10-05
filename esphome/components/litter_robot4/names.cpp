@@ -257,16 +257,15 @@ uint16_t panel_brightness_value(const char *name) {
   return (BRIGHTNESS_HIGH << 8) | PANEL_DIM_HIGH;
 }
 
-const char *format_register_value(Register reg, uint16_t value) {
+const char *format_register_value(Register reg, uint16_t value, char *buf, size_t buf_size) {
   switch (reg) {
     case REG_KEYPAD: {
       for (const auto &info : KEYPAD_COMMAND_NAMES) {
         if (info.command == value)
           return info.name;
       }
-      static char keypad_buf[32];
-      snprintf(keypad_buf, sizeof(keypad_buf), "%u (0x%04X)", value, value);
-      return keypad_buf;
+      snprintf(buf, buf_size, "%u (0x%04X)", value, value);
+      return buf;
     }
 
     case REG_FACTORY_RESET:
@@ -278,17 +277,13 @@ const char *format_register_value(Register reg, uint16_t value) {
     case REG_POWER_TYPE:
       return value == 0 ? "AC" : "Battery";
 
-    case REG_CAT_WEIGHT: {
-      static char weight_buf[16];
-      snprintf(weight_buf, sizeof(weight_buf), "%.1f lbs", static_cast<int16_t>(value) / 100.0f);
-      return weight_buf;
-    }
+    case REG_CAT_WEIGHT:
+      snprintf(buf, buf_size, "%.1f lbs", static_cast<int16_t>(value) / 100.0f);
+      return buf;
 
-    case REG_CLEAN_CYCLE_DELAY: {
-      static char delay_buf[16];
-      snprintf(delay_buf, sizeof(delay_buf), "%u min", value);
-      return delay_buf;
-    }
+    case REG_CLEAN_CYCLE_DELAY:
+      snprintf(buf, buf_size, "%u min", value);
+      return buf;
 
     case REG_PANEL_LOCKOUT:
     case REG_BONNET_REMOVED:
@@ -307,14 +302,13 @@ const char *format_register_value(Register reg, uint16_t value) {
         case LITTER_HOPPER_NOT_CONNECTED:
           return "Fault";
         default:
-          static char hopper_buf[32];
           switch ((value >> 8)) {
             case LITTER_HOPPER_START_HIGH:
-              snprintf(hopper_buf, sizeof(hopper_buf), "Dispense start (0x%04X)", value);
-              return hopper_buf;
+              snprintf(buf, buf_size, "Dispense start (0x%04X)", value);
+              return buf;
             case LITTER_HOPPER_STOPPED_HIGH:
-              snprintf(hopper_buf, sizeof(hopper_buf), "Dispense complete (0x%04X)", value);
-              return hopper_buf;
+              snprintf(buf, buf_size, "Dispense complete (0x%04X)", value);
+              return buf;
           }
       }
       break;
@@ -329,11 +323,9 @@ const char *format_register_value(Register reg, uint16_t value) {
     }
 
     case REG_WASTE_DRAWER_PCT:
-    case REG_DEBUG_LIGHT_LEVEL: {
-      static char pct_buf[16];
-      snprintf(pct_buf, sizeof(pct_buf), "%u%%", value);
-      return pct_buf;
-    }
+    case REG_DEBUG_LIGHT_LEVEL:
+      snprintf(buf, buf_size, "%u%%", value);
+      return buf;
 
     case REG_LITTER_LEVEL_RAW:
     case REG_CALIBRATED_LITTER_LEVEL_RAW:
@@ -342,28 +334,21 @@ const char *format_register_value(Register reg, uint16_t value) {
     case REG_CURTAIN_RIGHT:
     case REG_DEBUG_CURTAIN_LEFT:
     case REG_DEBUG_CURTAIN_CENTER:
-    case REG_DEBUG_CURTAIN_RIGHT: {
-      static char mm_buf[16];
-      snprintf(mm_buf, sizeof(mm_buf), "%u mm", value);
-      return mm_buf;
-    }
+    case REG_DEBUG_CURTAIN_RIGHT:
+      snprintf(buf, buf_size, "%u mm", value);
+      return buf;
 
-    case REG_DEBUG_WEIGHT: {
-      static char live_weight_buf[16];
-      snprintf(live_weight_buf, sizeof(live_weight_buf), "%.1f lbs", static_cast<int16_t>(value) / 10.0f);
-      return live_weight_buf;
-    }
+    case REG_DEBUG_WEIGHT:
+      snprintf(buf, buf_size, "%.1f lbs", static_cast<int16_t>(value) / 10.0f);
+      return buf;
 
     case REG_PANEL_LED: {
-      static char panel_buf[32];
-      uint8_t brightness = static_cast<uint8_t>(value >> 8);
-      const char *level = brightness_name(brightness);
+      const char *level = brightness_name(static_cast<uint8_t>(value >> 8));
       if (level) {
-        snprintf(panel_buf, sizeof(panel_buf), "%s", level);
-      } else {
-        snprintf(panel_buf, sizeof(panel_buf), "%u (0x%04X)", value, value);
+        return level;
       }
-      return panel_buf;
+      snprintf(buf, buf_size, "%u (0x%04X)", value, value);
+      return buf;
     }
 
     case REG_NIGHT_LIGHT_MODE: {
@@ -371,52 +356,43 @@ const char *format_register_value(Register reg, uint16_t value) {
       if (mode) {
         return mode;
       }
-      static char mode_buf[20];
-      snprintf(mode_buf, sizeof(mode_buf), "%u (0x%04X)", value, value);
-      return mode_buf;
+      snprintf(buf, buf_size, "%u (0x%04X)", value, value);
+      return buf;
     }
 
     case REG_NIGHT_LIGHT_BRIGHTNESS: {
-      static char bright_buf[20];
       const char *level = brightness_name(value);
       if (level) {
-        snprintf(bright_buf, sizeof(bright_buf), "%s", level);
-      } else {
-        snprintf(bright_buf, sizeof(bright_buf), "%u (0x%04X)", value, value);
+        return level;
       }
-      return bright_buf;
+      snprintf(buf, buf_size, "%u (0x%04X)", value, value);
+      return buf;
     }
 
     case REG_ROBOT_STATUS: {
-      auto *name = status_name(value);
-      static char status_buf[32];
+      const char *name = status_name(value);
       if (name) {
         return name;
-      } else {
-        snprintf(status_buf, sizeof(status_buf), "%u (0x%04X)", value, value);
       }
-      return status_buf;
+      snprintf(buf, buf_size, "%u (0x%04X)", value, value);
+      return buf;
     }
 
     case REG_WIFI_STATUS: {
-      auto *wifi_name = wifi_status_name(value);
-      static char wifi_buf[32];
-      if (wifi_name) {
-        return wifi_name;
-      } else {
-        snprintf(wifi_buf, sizeof(wifi_buf), "%u (0x%04X)", value, value);
+      const char *name = wifi_status_name(value);
+      if (name) {
+        return name;
       }
-      return wifi_buf;
+      snprintf(buf, buf_size, "%u (0x%04X)", value, value);
+      return buf;
     }
 
-    case REG_FAULT_CODE: {
+    case REG_FAULT_CODE:
       if (auto *name = fault_name(value)) {
         return name;
       }
-      static char fault_buf[16];
-      snprintf(fault_buf, sizeof(fault_buf), "%s (%u)", value != 0 ? "Fault" : "None", value);
-      return fault_buf;
-    }
+      snprintf(buf, buf_size, "%s (%u)", value != 0 ? "Fault" : "None", value);
+      return buf;
 
     case REG_SLEEP_SUN:
     case REG_WAKE_SUN:
@@ -431,11 +407,9 @@ const char *format_register_value(Register reg, uint16_t value) {
     case REG_SLEEP_FRI:
     case REG_WAKE_FRI:
     case REG_SLEEP_SAT:
-    case REG_WAKE_SAT: {
-      static char time_buf[8];
-      snprintf(time_buf, sizeof(time_buf), "%02u:%02u", value / 60, value % 60);
-      return time_buf;
-    }
+    case REG_WAKE_SAT:
+      snprintf(buf, buf_size, "%02u:%02u", value / 60, value % 60);
+      return buf;
 
     case REG_HEARTBEAT:
       if (value == 99) {
@@ -447,9 +421,8 @@ const char *format_register_value(Register reg, uint16_t value) {
       break;
   }
 
-  static char fallback_buf[20];
-  snprintf(fallback_buf, sizeof(fallback_buf), "%u (0x%04X)", value, value);
-  return fallback_buf;
+  snprintf(buf, buf_size, "%u (0x%04X)", value, value);
+  return buf;
 }
 
 }  // namespace esphome::litter_robot4
